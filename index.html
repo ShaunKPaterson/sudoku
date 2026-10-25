@@ -1,0 +1,1493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Sudoku with pencilmarks, teaching ideas, a training coach and statistics. Works offline.">
+<title>Sudoku</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f1f0fa; --bg2:#f1f0fa; --text:#2a2850; --muted:#6b6890; --given:#2a2850; --user:#325aaf; --tooltext:#4a4775;
+  --accent:#325aaf; --line:#ecebf2; --thick:#344861; --sel:#a9cdf3; --rel:#d7e3f1; --relbox:#eaf0f7; --same:#c3d7ea;
+  --soft:#e8e7ff; --tint:#f6f5fe;
+  --wrong:#e0475a; --wrongbg:#f9dde1; --wrongsolid:#d64545; --card:#ffffff; --flash:#9fc6f2; --switch:#c6cedb;
+  --shadow:0 10px 34px rgba(20,30,60,.18); --soft-shadow:0 4px 16px rgba(40,40,80,.08);
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif; --digitw:400;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121722; --bg2:#0c1018; --text:#c9d3e1; --muted:#8a97aa; --given:#e9eef6; --user:#86a8ff;
+    --accent:#86a8ff; --line:#2b3446; --thick:#8b98ad; --sel:#2c4b7c; --rel:#22304a; --relbox:#19212f; --same:#263a5c;
+    --wrong:#ff7d8c; --wrongbg:#45212a; --wrongsolid:#d02f45; --card:#1a2130; --flash:#3b67a8; --switch:#3a4559;
+    --shadow:0 10px 34px rgba(0,0,0,.5); --soft-shadow:0 4px 16px rgba(0,0,0,.35); --tooltext:#aab4c4; --line:#283143;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121722; --bg2:#0c1018; --text:#c9d3e1; --muted:#8a97aa; --given:#e9eef6; --user:#86a8ff;
+  --accent:#86a8ff; --line:#2b3446; --thick:#8b98ad; --sel:#2c4b7c; --rel:#22304a; --relbox:#19212f; --same:#263a5c;
+  --wrong:#ff7d8c; --wrongbg:#45212a; --wrongsolid:#d02f45; --card:#1a2130; --flash:#3b67a8; --switch:#3a4559;
+  --shadow:0 10px 34px rgba(0,0,0,.5); --soft-shadow:0 4px 16px rgba(0,0,0,.35); --tooltext:#aab4c4; --line:#283143;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--font)}
+body{overscroll-behavior:none;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button{font-family:inherit;-webkit-user-select:none;user-select:none}
+.app{max-width:520px;margin:0 auto;height:100vh;height:100dvh;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.screen.active{display:flex}
+.iconbtn{width:44px;height:44px;border:0;background:none;color:var(--accent);display:grid;place-items:center;
+  border-radius:50%;cursor:pointer;padding:0}
+.iconbtn:active{background:var(--rel)}
+.iconbtn svg{width:28px;height:28px}
+svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- game ----------
+   White rounded cards on a page tint; every tint is mixed from the accent (see applyTheme), and boxes are
+   told apart by alternating tints instead of thick lines. */
+.topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 16px 0}
+.topbar .right{display:flex;gap:5px;justify-self:end}
+.circ{width:42px;height:42px;border-radius:50%;border:0;background:var(--card);color:var(--text);display:grid;place-items:center;
+  box-shadow:var(--soft-shadow);cursor:pointer;padding:0}
+.circ:active{background:var(--soft)}
+.circ svg{width:21px;height:21px}
+.gtitle{display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 8px}
+.gtitle b{font-size:20px;font-weight:800;color:var(--text)}
+.timer{font-size:13px;font-weight:700;color:var(--accent);background:var(--soft);border-radius:10px;padding:2px 10px;font-variant-numeric:tabular-nums}
+.timer.over{color:var(--muted)}
+.statcard{margin:12px 16px 0;background:var(--card);border-radius:20px;padding:10px 14px;display:flex;align-items:center;gap:14px;box-shadow:var(--soft-shadow)}
+.ring{width:52px;height:52px;flex:none}
+.ring circle{fill:none;stroke-width:6}
+.ring .track{stroke:var(--soft)}
+.ring .fill{stroke:var(--accent);stroke-linecap:round;transition:stroke-dasharray .3s}
+.ring text{font-size:11.5px;font-weight:800;fill:var(--text);font-family:var(--font)}
+.stats{flex:1;display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px}
+.stats>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.stats span{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+.stats b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text)}
+.stats span b{font-size:12px}
+.mbar{display:flex;gap:3px;padding-top:3px}
+.mbar i{flex:1;height:8px;border-radius:4px;background:var(--soft)}
+.mbar i.on{background:#e25c7a}
+.boardwrap{padding:0 16px;margin-top:12px;display:flex;justify-content:center;position:relative}
+.boardcard{background:var(--card);border-radius:22px;padding:8px;box-shadow:0 10px 30px rgba(40,40,80,.10)}
+.board{width:min(calc(min(100vw,520px) - 48px),calc(100dvh - 384px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  min-width:250px;aspect-ratio:1;display:grid;grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);
+  border-radius:14px;overflow:hidden;container-type:inline-size;position:relative;background:var(--card)}
+.cell{position:relative;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;
+  place-items:center;font-size:7.2cqw;font-weight:var(--digitw);color:var(--given);cursor:pointer;line-height:1}
+.cell .v{display:inline-block}
+.cell.c8{border-right:0}
+.cell.r8{border-bottom:0}
+.cell.tb{background:var(--tint)}
+.cell.box{background:var(--relbox)}
+.cell.rel{background:var(--rel)}
+.cell.same{background:var(--same)}
+.cell.sel{background:var(--accent);color:#fff;border-radius:10px}
+.cell.user{color:var(--user)}
+.cell.sel.user{color:#fff}
+.cell.sel .notes,.cell.sel .notes span.hl{color:#fff}
+/* wrong numbers: white on solid red in every colour and theme, so they never blend with correct entries */
+.cell.wrong,.cell.user.wrong{color:#fff;background:var(--wrongsolid);font-weight:700}
+.cell.wrong.sel{box-shadow:inset 0 0 0 3px var(--text)}
+/* hint overlays */
+.cell.h-area{background:var(--rel)}
+.cell.h-target{background:var(--sel)}
+.cell.h-elim{background:var(--wrongbg)}
+.cell.h-focus{box-shadow:inset 0 0 0 3px var(--accent)}
+.cell.h-focusB{box-shadow:inset 0 0 0 3px #e8a317}
+.notes span.x{color:var(--wrong);text-decoration:line-through;font-weight:700}
+.controls{position:relative;display:flex;flex-direction:column}
+#game{overflow-y:auto}
+#game>*{flex-shrink:0}
+/* training: only the board, the coach card and the number pad, sized so nothing needs scrolling.
+   The card has a fixed height (long explanations scroll inside it) and the board takes what is left. */
+#game.training{--coachH:clamp(150px,25dvh,215px)}
+#game.training .statcard,#game.training .tools{display:none}
+#game.training .topbar{padding-top:8px}
+#game.training .board{width:min(calc(min(100vw,520px) - 48px),calc(100dvh - var(--coachH) - 212px - env(safe-area-inset-top) - env(safe-area-inset-bottom)))}
+.hintpanel.coach{position:static;order:-1;margin:0 16px;height:var(--coachH);box-shadow:var(--soft-shadow);border:0;border-radius:20px;gap:6px;padding:10px 14px 10px}
+.hintpanel.coach h4{font-size:16px}
+.hintpanel.coach p{font-size:14px;line-height:1.4}
+.hintpanel.coach .hbtns .btn{padding:9px;font-size:15px}
+.hintpanel.coach .hbtns .iconbtn{flex:none;width:42px;height:42px;background:var(--soft)}
+.hintpanel.coach .hbtns .iconbtn svg{width:22px;height:22px}
+.hintpanel.coach .hbtns .iconbtn.on{background:var(--accent);color:#fff}
+#game.training .num{min-height:56px;padding:6px 0 4px}
+.hintpanel{position:absolute;inset:0 16px 12px;background:var(--card);border-radius:18px;box-shadow:var(--shadow);display:none;
+  flex-direction:column;gap:8px;padding:14px 16px 12px;z-index:4;border:1px solid var(--line)}
+.hintpanel.on{display:flex}
+.hintpanel h4{margin:0;font-size:18px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.hintpanel .chip{font-size:12px;font-weight:600;background:var(--rel);color:var(--accent);padding:3px 9px;border-radius:10px}
+.hintpanel p{margin:0;font-size:15px;line-height:1.45;color:var(--text);overflow:auto;flex:1}
+.hintpanel .hbtns{display:flex;gap:10px}
+.hintpanel .hbtns .btn{margin:0;padding:11px;font-size:16px}
+.hintpanel .hbtns .btn[disabled]{opacity:.5}
+.legend{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:2px solid var(--line);background:none;color:var(--text);border-radius:18px;padding:7px 12px;font-size:14px;cursor:pointer}
+.chips button.on{border-color:var(--accent);background:var(--rel);color:var(--accent);font-weight:600}
+.lesson-chip{display:inline-block;font-size:12px;font-weight:600;background:var(--rel);color:var(--accent);padding:3px 10px;border-radius:10px}
+.sheet .lesson p{text-align:left;color:var(--text);margin:4px 2px 4px}
+.sheet .lesson h3{margin-top:14px}
+.difflist h3{margin:16px 0 0}
+.loading div{text-align:center;max-width:300px}
+.loading small{display:block;font-weight:500;color:var(--muted);margin-top:6px}
+.loading .btn{margin-top:12px;padding:10px}
+/* completion ripple: --d staggers each cell by its distance from the move */
+.cell.flash{animation:wave .7s ease-out var(--d,0ms)}
+.cell.flash .v{animation:bump .7s ease-out var(--d,0ms)}
+@keyframes wave{30%{background:var(--flash)}}
+@keyframes bump{30%{transform:scale(1.4);color:var(--accent)}}
+.banner{position:absolute;left:50%;top:50%;z-index:3;pointer-events:none;background:var(--accent);color:#fff;
+  padding:12px 20px;border-radius:16px;font-weight:700;font-size:19px;text-align:center;box-shadow:var(--shadow);
+  opacity:0;white-space:nowrap;transform:translate(-50%,-50%)}
+.banner small{display:block;font-size:14px;font-weight:600;opacity:.92;margin-top:3px}
+.banner.show{animation:banner 1.6s ease-out forwards}
+@keyframes banner{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
+  14%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+  24%{transform:translate(-50%,-50%) scale(1)}
+  75%{opacity:1;transform:translate(-50%,-56%)}
+  100%{opacity:0;transform:translate(-50%,-80%)}}
+.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55}
+.cell.pop .v{animation:pop .25s ease-out}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+.notes{position:absolute;inset:5%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  font-size:2.7cqw;color:var(--muted);line-height:1}
+.notes span{display:grid;place-items:center}
+.notes span.hl{color:var(--accent);font-weight:700}
+.cover{position:absolute;inset:0;background:var(--card);display:none;flex-direction:column;align-items:center;
+  justify-content:center;gap:10px;color:var(--muted);font-size:16px;z-index:2}
+.cover.on{display:flex}
+.cover .play{width:72px;height:72px;border-radius:50%;background:var(--accent);color:#fff;border:0;display:grid;
+  place-items:center;cursor:pointer}
+.cover .play svg{width:34px;height:34px;fill:currentColor;stroke:none;margin-left:4px}
+.controls{margin-top:12px;padding-bottom:14px;gap:10px}
+.dock{margin:0 16px;background:var(--card);border-radius:22px;box-shadow:var(--soft-shadow)}
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px}
+.tool{background:none;border:0;color:var(--tooltext);display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:12px;font-weight:700;cursor:pointer;padding:7px 0;border-radius:16px;min-height:54px}
+.tool:active{background:var(--soft)}
+.tool svg{width:23px;height:23px;stroke-width:2.1}
+.tool[disabled]{opacity:.4;cursor:default}
+.tool.active{background:var(--soft);color:var(--accent);font-weight:800}
+.numpad{display:grid;grid-template-columns:repeat(9,1fr);padding:4px}
+.num{background:none;border:0;color:var(--text);display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 0 6px;cursor:pointer;border-radius:14px;min-height:62px}
+.num .d{font-size:clamp(26px,7.6vw,32px);font-weight:500;line-height:1}
+.num .left{font-size:10px;font-weight:700;color:var(--muted)}
+.num:active{background:var(--soft)}
+.num.done{visibility:hidden}
+.notesmode .num .d{color:var(--accent);opacity:.8;font-size:clamp(22px,6.4vw,27px)}
+
+/* ---------- home ---------- */
+#home{align-items:center;background:linear-gradient(180deg,var(--bg) 55%,var(--bg2))}
+#home .top{align-self:stretch;display:flex;justify-content:flex-end;padding:10px}
+.logo{width:96px;height:96px;margin-top:6vh}
+#home h1{font-size:38px;margin:14px 0 4px;letter-spacing:.5px}
+.alltime{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:17px;font-weight:600}
+.alltime svg{width:20px;height:20px}
+.home-actions{margin-top:auto;width:100%;padding:0 28px 7vh;display:flex;flex-direction:column}
+.btn{display:block;width:100%;border:0;border-radius:30px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;
+  margin-top:12px;color:var(--accent);background:var(--rel)}
+.btn small{display:block;font-size:13px;font-weight:500;opacity:.85;margin-top:2px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.ghost{background:none}
+.btn:active{filter:brightness(.95)}
+
+/* ---------- stats ---------- */
+.subbar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:10px}
+.subbar h2{margin:0;text-align:center;font-size:20px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:6px 14px 16px;background:var(--rel);border-radius:12px;padding:4px}
+.tabs button{border:0;background:none;padding:9px 0;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.tabs button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px;overflow:auto}
+.card{background:var(--rel);border-radius:14px;padding:14px}
+.card span{display:block;font-size:13px;color:var(--muted)}
+.card b{display:block;font-size:24px;margin-top:6px;font-variant-numeric:tabular-nums}
+.card.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
+.card.wide b{margin:0}
+
+/* ---------- modal ---------- */
+.modal{position:fixed;inset:0;background:rgba(10,16,28,.5);display:none;align-items:center;justify-content:center;
+  padding:16px;z-index:50}
+.modal.open{display:flex}
+.sheet{background:var(--card);color:var(--text);border-radius:20px;padding:24px 20px 16px;width:100%;max-width:400px;
+  box-shadow:var(--shadow);max-height:90dvh;overflow:auto;animation:rise .2s ease-out}
+@keyframes rise{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.sheet h2{margin:0 0 8px;font-size:23px;text-align:center}
+.sheet p{margin:0 0 10px;text-align:center;color:var(--muted);line-height:1.4}
+.sheet .big{font-size:44px;text-align:center;margin-bottom:4px}
+.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 6px}
+.summary div{background:var(--rel);border-radius:12px;padding:10px 12px}
+.summary span{display:block;font-size:12px;color:var(--muted)}
+.summary b{font-size:19px;font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;justify-content:space-between;padding:13px 2px;border-bottom:1px solid var(--line);font-size:16px}
+.row:last-of-type{border-bottom:0}
+.row small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.switch{position:relative;width:48px;height:28px;flex:none}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch span{position:absolute;inset:0;background:var(--switch);border-radius:20px;transition:.2s;cursor:pointer}
+.switch span::after{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;border-radius:50%;background:#fff;transition:.2s}
+.switch input:checked+span{background:var(--accent)}
+.switch input:checked+span::after{transform:translateX(20px)}
+.seg{display:flex;background:var(--rel);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;padding:6px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sheet h3{margin:20px 0 2px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+.sublabel{font-size:16px;margin:14px 2px 10px}
+.sheet .note{font-size:14px;color:var(--muted);line-height:1.45;margin:6px 2px 0;text-align:left}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:34px;height:34px;border-radius:50%;border:0;background:var(--rel);color:var(--accent);font-size:20px;
+  font-weight:700;cursor:pointer;line-height:1}
+.stepper b{min-width:86px;text-align:center;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.swatches{display:flex;flex-wrap:wrap;gap:12px}
+.swatch{width:38px;height:38px;border-radius:50%;border:3px solid var(--card);box-shadow:0 0 0 2px transparent;cursor:pointer;
+  padding:0;position:relative}
+.swatch.on{box-shadow:0 0 0 2px var(--text)}
+.swatch.custom::after{content:"+";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:20px;font-weight:700}
+.swatch.custom input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.fontgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fontopt{border:2px solid var(--line);background:none;border-radius:12px;padding:8px 4px;cursor:pointer;color:var(--text)}
+.fontopt b{display:block;font-size:22px;font-weight:inherit;color:var(--accent)}
+.fontopt span{font-size:12px}
+.fontopt.on{border-color:var(--accent);background:var(--rel)}
+.breakdown{margin:12px 0 4px}
+.breakdown div{display:flex;justify-content:space-between;padding:7px 2px;font-size:15px;border-bottom:1px solid var(--line)}
+.breakdown div:last-child{border-bottom:0;font-weight:700;font-size:18px}
+.breakdown small{color:var(--muted)}
+.difflist .btn{text-align:left;padding:11px 18px;border-radius:16px;margin-top:8px}
+.difflist .btn small{margin-top:2px;font-weight:500}
+
+.toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  background:#232b3a;color:#fff;padding:10px 18px;border-radius:22px;font-size:15px;opacity:0;pointer-events:none;
+  transition:opacity .2s;z-index:60;white-space:nowrap}
+.toast.show{opacity:1}
+.loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,16,28,.35);z-index:70}
+.loading.on{display:flex}
+.loading div{background:var(--card);padding:16px 22px;border-radius:14px;box-shadow:var(--shadow);font-weight:600}
+@media (max-height:640px){
+  .statcard{padding:6px 12px}
+  .tool{min-height:48px;padding:5px 0}
+  .num{min-height:54px;padding:6px 0 4px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Home -->
+  <section id="home" class="screen">
+    <div class="top">
+      <button class="iconbtn" data-act="settings" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><use href="#ic-gear"/></svg></button>
+    </div>
+    <svg class="logo" viewBox="0 0 96 96" aria-hidden="true">
+      <rect x="2" y="2" width="92" height="92" rx="20" fill="var(--accent)"/>
+      <g stroke="#fff" stroke-width="3" opacity=".9"><path d="M38 16v64M58 16v64M16 38h64M16 58h64"/></g>
+      <rect x="16" y="16" width="64" height="64" rx="6" fill="none" stroke="#fff" stroke-width="4"/>
+      <g fill="#fff" font-family="system-ui,Segoe UI,Roboto,sans-serif" font-size="15" font-weight="700" text-anchor="middle">
+        <text x="27" y="33">5</text><text x="48" y="54">3</text><text x="69" y="75">9</text><text x="69" y="33">1</text>
+      </g>
+    </svg>
+    <h1>Sudoku</h1>
+    <div class="alltime"><svg class="i" viewBox="0 0 24 24"><use href="#ic-trophy"/></svg><span id="homeAllTime">0</span></div>
+    <div class="home-actions">
+      <button class="btn primary" id="btnContinue" data-act="continue">Continue<small id="continueInfo"></small></button>
+      <button class="btn" id="btnNew" data-act="newgame">New Game</button>
+      <button class="btn ghost" data-act="learn">Learn techniques</button>
+      <button class="btn ghost" data-act="stats">Statistics</button>
+    </div>
+  </section>
+
+  <!-- Game -->
+  <section id="game" class="screen">
+    <div class="topbar">
+      <div><button class="circ" data-act="home" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button></div>
+      <div class="gtitle"><b id="diffLabel">Medium</b><span class="timer" id="timer">00:00</span></div>
+      <div class="right">
+        <button class="circ" data-act="restart" aria-label="Restart puzzle"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>
+        <button class="circ" data-act="pause" aria-label="Pause"><svg class="i" viewBox="0 0 24 24" id="pauseIcon"><path d="M9 6v12M15 6v12"/></svg></button>
+        <button class="circ" data-act="settings" aria-label="Settings"><svg class="i" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+      </div>
+    </div>
+    <div class="statcard" id="statcard">
+      <svg class="ring" viewBox="0 0 52 52" role="img" id="ring" aria-label="Squares placed">
+        <circle class="track" cx="26" cy="26" r="21"/>
+        <circle class="fill" id="ringFill" cx="26" cy="26" r="21" stroke-dasharray="0 132" transform="rotate(-90 26 26)"/>
+        <text x="26" y="30" text-anchor="middle" id="progress">0/0</text>
+      </svg>
+      <div class="stats">
+        <div><span>Score</span><b id="score">0</b></div>
+        <div><span>Mistakes <b id="mistakes">0/3</b></span><span class="mbar" id="mistakeBar" role="img"></span></div>
+        <div><span>All time</span><b id="allTime">0</b></div>
+      </div>
+    </div>
+    <div class="boardwrap">
+      <div class="boardcard">
+        <div class="board" id="board">
+          <div class="cover" id="cover">
+            <button class="play" data-act="pause" aria-label="Resume"><svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg></button>
+            <span>Paused</span>
+          </div>
+        </div>
+      </div>
+      <div class="banner" id="banner"></div>
+    </div>
+    <div class="controls" id="controls">
+      <div class="tools dock">
+        <button class="tool" data-act="undo"><svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Undo</button>
+        <button class="tool" data-act="erase"><svg class="i" viewBox="0 0 24 24"><path d="M20 20H9L4 15l10-10 6 6-7 7"/><path d="M9 10l6 6"/></svg>Clear</button>
+        <button class="tool" data-act="notes" id="notesBtn" aria-pressed="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Pencilmarks</button>
+        <button class="tool" data-act="hint" id="hintBtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.6 2.3c-.8.4-1.2 1-1.2 1.8v.4"/><path d="M12 17.2h.01"/></svg><span id="hintLabel">Idea</span></button>
+      </div>
+      <div class="numpad dock" id="numpad"></div>
+      <div class="hintpanel" id="hintPanel"></div>
+    </div>
+  </section>
+
+  <!-- Statistics -->
+  <section id="stats" class="screen">
+    <div class="subbar">
+      <button class="iconbtn" data-act="home" aria-label="Back"><svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <h2>Statistics</h2><span></span>
+    </div>
+    <div class="tabs" id="statTabs"></div>
+    <div class="cards" id="statCards"></div>
+  </section>
+</div>
+
+<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+<div class="loading" id="loading"><div><span id="loadingText">Creating puzzle…</span><small id="loadingSub"></small>
+  <button class="btn" data-act="cancelSearch">Cancel</button></div></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="ic-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></symbol>
+</svg>
+
+<script src="engine.js"></script>
+<script>
+'use strict';
+
+// ---------- constants ----------
+// Levels are defined by the hardest solving technique a puzzle needs (see engine.js), not by clue count.
+// pts: per correct number and per completed row/column/box. par: target time in seconds for the time bonus.
+// Beginner shares Easy's technique but starts with many more clues, so there is always plenty to find.
+const DIFFS = {
+  beginner: {label: 'Beginner', level: 1, pts: 10,  par: 25 * 60,  minClues: 41, desc: 'Lots of numbers to start — hidden singles'},
+  easy:     {label: 'Easy',     level: 1, pts: 20,  par: 35 * 60,  desc: 'Hidden singles only'},
+  medium:   {label: 'Medium',   level: 2, pts: 40,  par: 50 * 60,  desc: 'Adds naked singles'},
+  hard:     {label: 'Hard',     level: 3, pts: 60,  par: 75 * 60,  desc: 'Pointing, box/line, pairs & triples'},
+  expert:   {label: 'Expert',   level: 4, pts: 90,  par: 100 * 60, desc: 'X-Wing, Skyscraper, Kite, XY-Wing, Swordfish'},
+  master:   {label: 'Master',   level: 5, pts: 130, par: 150 * 60, desc: 'XYZ-Wing, Jellyfish, Colouring, XY-Chains'},
+};
+const MISTAKE_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0]; // 0 = no limit
+const HINT_STEPS = [1, 3, 5, 10, 0];                     // 0 = unlimited
+const COLOURS = {
+  blue: [217, 56], green: [152, 45], teal: [186, 62], purple: [262, 48],
+  pink: [330, 58], orange: [24, 80], red: [355, 62], slate: [215, 18],
+};
+// Android Chrome resolves the first names (sans-serif-light, casual …) to built-in system fonts; the rest are desktop fallbacks.
+const FONTS = {
+  rounded:   {label: 'Rounded',     w: 700, css: 'Nunito,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'},
+  classic:   {label: 'Classic',     w: 400, css: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif'},
+  light:     {label: 'Light',       w: 300, css: '"sans-serif-light","Segoe UI Light","Helvetica Neue",system-ui,sans-serif'},
+  condensed: {label: 'Condensed',   w: 400, css: '"sans-serif-condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif'},
+  serif:     {label: 'Serif',       w: 400, css: '"Noto Serif",Georgia,"Times New Roman",serif'},
+  mono:      {label: 'Mono',        w: 400, css: '"Droid Sans Mono","Roboto Mono",Consolas,"Courier New",monospace'},
+  hand:      {label: 'Handwritten', w: 400, css: 'casual,"Coming Soon","Comic Sans MS","Segoe Print",cursive'},
+};
+const E = SudokuEngine, {RO, CO, BO, PEERS} = E;
+const UNITS = []; // row, column, box interleaved: k % 3 gives the kind
+for (let k = 0; k < 9; k++) {
+  UNITS.push([...Array(81).keys()].filter(i => RO[i] === k));
+  UNITS.push([...Array(81).keys()].filter(i => CO[i] === k));
+  UNITS.push([...Array(81).keys()].filter(i => BO[i] === k));
+}
+
+// ---------- puzzle search ----------
+// Puzzles are generated and graded in a background worker (engine.js) so the screen never freezes.
+// Well-graded puzzles found along the way are banked for instant starts later.
+let worker = null, job = null;
+function getWorker() {
+  if (!worker && typeof Worker !== 'undefined') {
+    try {
+      worker = new Worker('engine.js');
+      worker.onmessage = e => job && e.data.id === job.id && job.onMessage(e.data);
+      worker.onerror = () => { worker = null; };
+    } catch (e) { worker = null; }
+  }
+  return worker;
+}
+const puzzlePrefs = () => ({symmetric: settings.symmetric, pace: settings.pace, families: settings.families});
+
+function bankPuzzle(r) {
+  const bank = store.get('bank', {}), list = bank[r.meta.level] = bank[r.meta.level] || [];
+  if (list.length < 30 && !list.some(x => x.puzzle === r.puzzle)) { list.push(r); store.set('bank', bank); }
+}
+function takeFromBank(level, prefs) {
+  const bank = store.get('bank', {}), list = bank[level] || [];
+  const k = list.findIndex(r => E.matchesPrefs(r.meta, level, prefs));
+  if (k < 0) return null;
+  const [r] = list.splice(k, 1);
+  store.set('bank', bank);
+  return r;
+}
+
+// Resolves with {puzzle, solution, meta} or null if cancelled / nothing found within the budget.
+function searchPuzzle(level, prefs, onProgress, budgetMs = 40000) {
+  return new Promise(resolve => {
+    const id = Date.now() + Math.random();
+    const finish = r => { job = null; resolve(r); };
+    const w = getWorker();
+    if (w) {
+      job = {id, cancel: () => { w.terminate(); worker = null; finish(null); }, onMessage(m) {
+        if (m.extra) bankPuzzle(m.extra);
+        if (m.progress) onProgress(m.progress);
+        if (m.done) finish(m.found);
+      }};
+      w.postMessage({id, level, prefs, budgetMs});
+      return;
+    }
+    // No worker support: search on the main thread in short slices.
+    const t0 = Date.now();
+    let tries = 0, stop = false;
+    job = {id, cancel: () => { stop = true; finish(null); }};
+    (function slice() {
+      if (stop) return;
+      const until = Date.now() + 30;
+      while (Date.now() < until) {
+        tries++;
+        const r = E.generateOnce(level, prefs);
+        if (E.matchesPrefs(r.meta, level, prefs)) return finish(r);
+        if (r.meta.solved && r.meta.level >= 3) bankPuzzle(r);
+      }
+      onProgress(tries);
+      if (Date.now() - t0 > budgetMs) return finish(null);
+      setTimeout(slice, 0);
+    })();
+  });
+}
+
+// ---------- storage ----------
+const store = {
+  get(k, def) { try { const v = localStorage.getItem('sudoku.' + k); return v ? JSON.parse(v) : def; } catch (e) { return def; } },
+  set(k, v) { try { localStorage.setItem('sudoku.' + k, JSON.stringify(v)); } catch (e) {} },
+};
+function freshStats() {
+  const s = {allTime: 0, byDiff: {}};
+  for (const k in DIFFS) s.byDiff[k] = {started: 0, won: 0, totalTime: 0, best: null, streak: 0, bestStreak: 0};
+  return s;
+}
+const settings = Object.assign(
+  {theme: 'auto', maxMistakes: 3, highlightArea: true, highlightSame: true, autoNotes: true, showTimer: true,
+   sounds: true, colour: 'blue', customColour: '#325aaf', font: 'rounded',
+   hintsPerGame: 3, symmetric: true, pace: 'any', families: [], training: false},
+  store.get('settings', {}));
+if (typeof settings.mistakeLimit === 'boolean') { settings.maxMistakes = settings.mistakeLimit ? 3 : 0; delete settings.mistakeLimit; }
+// The "Soft" redesign brings its rounded font; switch existing players over once (they can change it back).
+if (settings.design !== 'soft') { settings.design = 'soft'; settings.font = 'rounded'; }
+const stats = freshStats();
+(function loadStats(saved) {
+  stats.allTime = saved.allTime || 0;
+  for (const k in stats.byDiff) Object.assign(stats.byDiff[k], (saved.byDiff || {})[k]);
+})(store.get('stats', {}));
+let G = store.get('game', null);
+if (G && !G.unitsDone) Object.assign(G, {unitsDone: Array(27).fill(0), cellPts: G.score, unitPts: 0});
+if (G && !G.elims) G.elims = [];
+let paused = false, screen = 'home', statsTab = 'medium';
+let hintView = null; // the open hint: {kind, stage, step, state, ...}
+const flashing = new Map(); // cell index -> ripple step
+let popCell = -1;
+
+const saveGame = () => store.set('game', G);
+const saveStats = () => store.set('stats', stats);
+const saveSettings = () => store.set('settings', settings);
+
+// ---------- helpers ----------
+const $ = id => document.getElementById(id);
+function fmtTime(s) {
+  const h = s / 3600 | 0, m = (s % 3600) / 60 | 0, sec = s % 60, p = n => String(n).padStart(2, '0');
+  return h ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`;
+}
+const fmtNum = n => n.toLocaleString('en-GB');
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1600);
+}
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+const isLocked = i => G.puzzle[i] !== 0 || G.board[i] === G.solution[i];
+const isSolved = () => G.board.every((v, i) => v === G.solution[i]);
+const playing = () => G && G.status === 'playing' && !paused;
+
+function hexToHS(hex) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+  let h = 0;
+  if (d) { h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; }
+  return [Math.round(h), d ? Math.round(d / (1 - Math.abs(2 * l - 1)) * 100) : 0];
+}
+
+// The chosen colour sets the accent and every highlight shade, tuned separately for light and dark mode.
+function applyTheme() {
+  const root = document.documentElement;
+  if (settings.theme === 'auto') delete root.dataset.theme; else root.dataset.theme = settings.theme;
+  const dark = settings.theme === 'dark' || (settings.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.querySelector('meta[name=theme-color]').content = dark ? '#121722' : '#ffffff';
+  const [h, s0] = settings.colour === 'custom' ? hexToHS(settings.customColour) : (COLOURS[settings.colour] || COLOURS.blue);
+  const s = Math.max(s0, 10), hsl = (S, L) => `hsl(${h} ${Math.min(Math.round(S), 100)}% ${L}%)`;
+  const accent = dark ? hsl(s + 20, 72) : hsl(s, 42);
+  // Every tint is the accent mixed into the card colour, so any colour keeps the screen in one family.
+  const card = dark ? '#1a2130' : '#ffffff', page = dark ? '#121722' : '#ffffff';
+  const mix = (p, base = card) => `color-mix(in srgb, ${accent} ${p}%, ${base})`;
+  const pal = dark
+    ? {accent, bg: mix(6, page), bg2: mix(6, page), soft: mix(22), tint: mix(9), relbox: mix(16), rel: mix(26), same: mix(36), sel: mix(42), flash: mix(55)}
+    : {accent, bg: mix(7, page), bg2: mix(7, page), soft: mix(14), tint: mix(8), relbox: mix(13), rel: mix(20), same: mix(30), sel: mix(32), flash: mix(45)};
+  pal.user = pal.accent;
+  for (const k in pal) root.style.setProperty('--' + k, pal[k]);
+  const f = FONTS[settings.font] || FONTS.classic;
+  root.style.setProperty('--font', f.css);
+  root.style.setProperty('--digitw', f.w);
+}
+
+let audio;
+function chime(freqs, step = 0.11) {
+  if (!settings.sounds) return;
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    const t = audio.currentTime;
+    freqs.forEach((f, k) => {
+      const o = audio.createOscillator(), g = audio.createGain(), at = t + k * step;
+      o.type = 'triangle'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.2, at + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
+      o.connect(g).connect(audio.destination);
+      o.start(at); o.stop(at + 0.5);
+    });
+  } catch (e) {}
+}
+
+function confetti() {
+  const cv = document.createElement('canvas'), dpr = devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  cv.className = 'confetti'; cv.width = W * dpr; cv.height = H * dpr;
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const cols = [getComputedStyle(document.documentElement).getPropertyValue('--accent'), '#f6c343', '#ef5d7a', '#4cc38a', '#8e7cf0'];
+  const ps = Array.from({length: 160}, () => ({
+    x: W / 2 + (Math.random() - .5) * W * .4, y: H * .4, vx: (Math.random() - .5) * 13, vy: -Math.random() * 15 - 4,
+    r: Math.random() * 6 + 5, c: cols[Math.random() * cols.length | 0], a: Math.random() * 6, va: (Math.random() - .5) * .4,
+  }));
+  const t0 = performance.now();
+  (function frame(t) {
+    const el = t - t0;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = Math.max(0, 1 - el / 3200);
+    for (const p of ps) {
+      p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a); ctx.fillStyle = p.c;
+      ctx.fillRect(-p.r / 2, -p.r / 4, p.r, p.r / 2); ctx.restore();
+    }
+    if (el < 3200) requestAnimationFrame(frame); else cv.remove();
+  })(t0);
+}
+
+function banner(html) {
+  const b = $('banner');
+  b.innerHTML = html;
+  b.classList.remove('show');
+  void b.offsetWidth; // restart the animation
+  b.classList.add('show');
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
+// ---------- board DOM ----------
+const cells = [];
+(function buildBoard() {
+  const board = $('board');
+  for (let i = 0; i < 81; i++) {
+    const el = document.createElement('div');
+    el.innerHTML = '<span class="v"></span><div class="notes">' + '<span></span>'.repeat(9) + '</div>';
+    el.addEventListener('click', () => select(i));
+    board.appendChild(el);
+    cells.push({el, v: el.firstChild, notes: [...el.lastChild.children]});
+  }
+  const pad = $('numpad');
+  for (let d = 1; d <= 9; d++) {
+    const b = document.createElement('button');
+    b.className = 'num';
+    b.setAttribute('aria-label', `Enter ${d}`);
+    b.innerHTML = `<span class="d">${d}</span><span class="left"></span>`;
+    b.addEventListener('click', () => input(d));
+    pad.appendChild(b);
+  }
+})();
+
+// ---------- rendering ----------
+function render() {
+  if (!G) return;
+  if (G.training && G.status === 'playing' && !paused) refreshCoach();
+  const hv = hintView && hintView.view, sel = hv && !hintView.training ? -1 : G.sel, selVal = sel >= 0 ? G.board[sel] : 0;
+  let filled = 0;
+  const counts = Array(10).fill(0);
+  for (let i = 0; i < 81; i++) {
+    const v = G.board[i], c = cells[i], correct = v && v === G.solution[i];
+    if (correct) counts[v]++;
+    if (!G.puzzle[i] && correct) filled++;
+    let cls = `cell r${RO[i]} c${CO[i]}${BO[i] % 2 === 0 ? ' tb' : ''}`;
+    if (!G.puzzle[i] && v) cls += ' user';
+    if (v && !correct) cls += ' wrong';
+    if (sel >= 0 && i !== sel && !hv) {
+      if (settings.highlightArea && (RO[i] === RO[sel] || CO[i] === CO[sel])) cls += ' rel';
+      else if (settings.highlightArea && BO[i] === BO[sel]) cls += ' box';
+      if (settings.highlightSame && selVal && v === selVal) cls += ' same';
+    }
+    if (i === sel) cls += ' sel';
+    if (hv) {
+      if (hv.area.has(i)) cls += ' h-area';
+      if (hv.target.has(i)) cls += ' h-target';
+      if (hv.elim.has(i)) cls += ' h-elim';
+      if (hv.focus.has(i)) cls += ' h-focus';
+      if (hv.focusB.has(i)) cls += ' h-focusB';
+    }
+    if (flashing.has(i)) { cls += ' flash'; c.el.style.setProperty('--d', flashing.get(i) * 55 + 'ms'); }
+    if (i === popCell) cls += ' pop';
+    c.el.className = cls;
+    c.v.textContent = v || '';
+    // While a hint is explained, the cells it talks about show their true candidates:
+    // the digits involved emphasised, the ones being removed struck through.
+    const shown = hv && !v && hv.cands.has(i);
+    const n = v ? 0 : shown ? hv.cands.get(i) : G.notes[i];
+    for (let d = 1; d <= 9; d++) {
+      const bit = 1 << d, on = n & bit, s = c.notes[d - 1];
+      s.textContent = on ? d : '';
+      s.className = !on ? '' : shown && (hv.elim.get(i) & bit) ? 'x' : shown ? (hv.digits & bit ? 'hl' : '') : d === selVal ? 'hl' : '';
+    }
+  }
+  popCell = -1;
+  $('progress').textContent = `${filled}/${G.empties}`;
+  $('ring').setAttribute('aria-label', `${filled} of ${G.empties} squares placed`);
+  const RING = 2 * Math.PI * 21;
+  $('ringFill').setAttribute('stroke-dasharray', `${(RING * filled / G.empties).toFixed(1)} ${RING.toFixed(1)}`);
+  updateTimer();
+  $('timer').style.visibility = settings.showTimer ? 'visible' : 'hidden';
+  $('allTime').textContent = fmtNum(stats.allTime);
+  $('diffLabel').textContent = DIFFS[G.diff].label;
+  $('score').textContent = fmtNum(G.score);
+  // Mistakes: one bar segment per allowed mistake, so any limit from 1 to 10 fits the same width.
+  const max = settings.maxMistakes, made = max ? Math.min(G.mistakes, max) : G.mistakes;
+  $('mistakes').textContent = max ? `${made}/${max}` : `${made} · no limit`;
+  $('mistakeBar').innerHTML = max ? Array.from({length: max}, (_, k) => `<i class="${k < made ? 'on' : ''}"></i>`).join('') : '';
+  $('mistakeBar').setAttribute('aria-label', max ? `${made} of ${max} mistakes used` : `${made} mistakes`);
+  [...$('numpad').children].forEach((b, k) => {
+    b.classList.toggle('done', counts[k + 1] >= 9);
+    b.lastChild.textContent = `×${9 - counts[k + 1]}`;
+  });
+  $('notesBtn').classList.toggle('active', !!G.notesMode);
+  $('notesBtn').setAttribute('aria-pressed', G.notesMode ? 'true' : 'false');
+  $('controls').classList.toggle('notesmode', !!G.notesMode);
+  $('controls').classList.toggle('training', !!G.training);
+  $('game').classList.toggle('training', !!G.training);
+  $('hintLabel').textContent = G.hints < 0 ? 'Idea' : `Idea · ${G.hints}`;
+  renderHint();
+  $('cover').classList.toggle('on', paused);
+  $('pauseIcon').innerHTML = paused ? '<path d="M8 5l11 7-11 7z"/>' : '<path d="M9 6v12M15 6v12"/>';
+}
+
+// The timer shows in the accent colour while a time bonus is still possible.
+function updateTimer() {
+  $('timer').textContent = fmtTime(G.time);
+  $('timer').classList.toggle('over', G.time >= DIFFS[G.diff].par);
+}
+
+function renderHome() {
+  $('homeAllTime').textContent = fmtNum(stats.allTime);
+  const canContinue = G && G.status !== 'won';
+  $('btnContinue').style.display = canContinue ? '' : 'none';
+  if (canContinue) $('continueInfo').textContent = `${DIFFS[G.diff].label}${G.training ? ' · Training' : ''} · ${fmtTime(G.time)}`;
+  $('btnNew').classList.toggle('primary', !canContinue);
+}
+
+function renderStats() {
+  $('statTabs').innerHTML = Object.keys(DIFFS).map(k =>
+    `<button class="${k === statsTab ? 'on' : ''}" data-tab="${k}">${DIFFS[k].label}</button>`).join('');
+  const s = stats.byDiff[statsTab];
+  const rate = s.started ? Math.round(s.won / s.started * 100) + '%' : '–';
+  const avg = s.won ? fmtTime(Math.round(s.totalTime / s.won)) : '–';
+  $('statCards').innerHTML = `
+    <div class="card wide"><span>All-time score</span><b>${fmtNum(stats.allTime)}</b></div>
+    <div class="card"><span>Games started</span><b>${s.started}</b></div>
+    <div class="card"><span>Games won</span><b>${s.won}</b></div>
+    <div class="card"><span>Win rate</span><b>${rate}</b></div>
+    <div class="card"><span>Best time</span><b>${s.best == null ? '–' : fmtTime(s.best)}</b></div>
+    <div class="card"><span>Best score</span><b>${s.bestScore == null ? '–' : fmtNum(s.bestScore)}</b></div>
+    <div class="card"><span>Target time</span><b>${fmtTime(DIFFS[statsTab].par)}</b></div>
+    <div class="card"><span>Average time</span><b>${avg}</b></div>
+    <div class="card"><span>Current streak</span><b>${s.streak}</b></div>
+    <div class="card"><span>Best streak</span><b>${s.bestStreak}</b></div>`;
+}
+
+// ---------- screens & navigation ----------
+function setScreen(name) {
+  screen = name;
+  document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === name));
+  if (name === 'home') renderHome();
+  if (name === 'stats') renderStats();
+  if (name === 'game') render();
+}
+// Pushing a history entry lets the phone's back button return to the home screen instead of closing the app.
+function openScreen(name) {
+  if (screen === 'home') history.pushState({s: name}, ''); else history.replaceState({s: name}, '');
+  setScreen(name);
+}
+function goHome() {
+  if (history.state && history.state.s) history.back(); else setScreen('home');
+}
+window.addEventListener('popstate', () => { closeModal(); setScreen('home'); });
+
+// ---------- modal ----------
+function showModal(html, buttons, dismissable = true) {
+  const sheet = $('sheet');
+  sheet.innerHTML = html;
+  for (const b of buttons || []) {
+    const el = document.createElement('button');
+    el.className = 'btn ' + (b.cls || '');
+    el.innerHTML = b.label;
+    el.addEventListener('click', () => { if (!b.keepOpen) closeModal(); b.onClick && b.onClick(); });
+    sheet.appendChild(el);
+  }
+  $('modal').dataset.dismissable = dismissable ? '1' : '';
+  $('modal').classList.add('open');
+}
+function closeModal() { $('modal').classList.remove('open'); }
+$('modal').addEventListener('click', e => { if (e.target.id === 'modal' && $('modal').dataset.dismissable) closeModal(); });
+
+function chooseDifficulty() {
+  const current = G ? G.diff : 'medium';
+  const fav = E.FAMILIES.filter(f => settings.families.includes(f.id)).map(f => f.name);
+  showModal(`<h2>New Game</h2><p>Levels are set by the hardest technique the puzzle needs.` +
+    (fav.length ? `<br><small>Favouring: ${fav.join(', ')}</small>` : '') + `</p>
+    <label class="row"><div>Training mode<small>A coach shows and explains every step</small></div>
+      <span class="switch"><input type="checkbox" id="trainToggle" ${settings.training ? 'checked' : ''}><span></span></span></label>
+    <div class="difflist" id="difflist"></div>`,
+    [{label: 'Cancel', cls: 'ghost'}]);
+  $('trainToggle').addEventListener('change', e => { settings.training = e.target.checked; saveSettings(); });
+  $('difflist').innerHTML = Object.keys(DIFFS).map(k =>
+    `<button class="btn ${k === current ? 'primary' : ''}" data-diff="${k}">${DIFFS[k].label}<small>${DIFFS[k].desc}</small></button>`).join('');
+  $('difflist').addEventListener('click', e => {
+    const b = e.target.closest('[data-diff]');
+    if (b) { closeModal(); newGame(b.dataset.diff); }
+  });
+}
+
+const mistakeLabel = n => n ? `${n} mistake${n > 1 ? 's' : ''}` : 'No limit';
+const hintLabel = n => n ? `${n} idea${n > 1 ? 's' : ''}` : 'Unlimited';
+
+function showSettings() {
+  const toggle = ([k, label, sub]) => `<label class="row"><div>${label}${sub ? `<small>${sub}</small>` : ''}</div>
+    <span class="switch"><input type="checkbox" data-set="${k}" ${settings[k] ? 'checked' : ''}><span></span></span></label>`;
+  const seg = ['auto', 'light', 'dark'].map(t =>
+    `<button data-theme="${t}" class="${settings.theme === t ? 'on' : ''}">${t[0].toUpperCase() + t.slice(1)}</button>`).join('');
+  const swatches = Object.keys(COLOURS).map(k =>
+    `<button class="swatch ${settings.colour === k ? 'on' : ''}" data-colour="${k}" aria-label="${k}"
+      style="background:hsl(${COLOURS[k][0]} ${COLOURS[k][1]}% 45%)"></button>`).join('') +
+    `<label class="swatch custom ${settings.colour === 'custom' ? 'on' : ''}" id="customSwatch" style="background:${settings.customColour}"
+      aria-label="Custom colour"><input type="color" id="customColour" value="${settings.customColour}"></label>`;
+  const fonts = Object.keys(FONTS).map(k =>
+    `<button class="fontopt ${settings.font === k ? 'on' : ''}" data-font="${k}"
+      style="font-family:${FONTS[k].css.replace(/"/g, "'")};font-weight:${FONTS[k].w}"><b>123</b><span>${FONTS[k].label}</span></button>`).join('');
+  const par = Object.values(DIFFS).map(d => `${d.label} ${d.par / 60} min`).join(', ');
+  const paceSeg = [['any', 'Any'], ['flowing', 'Flowing'], ['tight', 'Tight']].map(([k, l]) =>
+    `<button data-pace="${k}" class="${settings.pace === k ? 'on' : ''}">${l}</button>`).join('');
+  const famChips = E.FAMILIES.map(f =>
+    `<button data-family="${f.id}" class="${settings.families.includes(f.id) ? 'on' : ''}">${f.name}</button>`).join('');
+  showModal(`<h2>Settings</h2><div id="settingsBody">
+    <h3>Game</h3>
+    <div class="row"><div>Game over after<small>Mistakes allowed before the game is lost</small></div>
+      <div class="stepper"><button data-step="-1" aria-label="Fewer">−</button><b id="mistakeVal">${mistakeLabel(settings.maxMistakes)}</b><button data-step="1" aria-label="More">+</button></div></div>
+    <div class="row"><div>Ideas per game<small>Each "Show me" uses one</small></div>
+      <div class="stepper"><button data-hstep="-1" aria-label="Fewer">−</button><b id="hintVal">${hintLabel(settings.hintsPerGame)}</b><button data-hstep="1" aria-label="More">+</button></div></div>
+    ${[['training', 'Training mode', 'A coach shows and explains every step (games aren\'t scored)'],
+       ['autoNotes', 'Auto-remove pencilmarks', 'Clear a number from pencilmarks when it is placed'],
+       ['showTimer', 'Show timer'], ['sounds', 'Sounds']].map(toggle).join('')}
+    <h3>Puzzle style</h3>
+    <div class="sublabel">Favourite techniques</div>
+    <div class="chips">${famChips}</div>
+    <p class="note">New Hard, Expert and Master puzzles will need at least one of your favourites (where the level allows it).</p>
+    <div class="row"><div>Pace<small>Flowing: lots to find at once. Tight: often just one way forward.</small></div><div class="seg">${paceSeg}</div></div>
+    ${toggle(['symmetric', 'Symmetric clue layout', 'The classic newspaper look'])}
+    <h3>Highlighting</h3>
+    ${[['highlightArea', 'Highlight row, column & box'], ['highlightSame', 'Highlight identical numbers']].map(toggle).join('')}
+    <h3>Appearance</h3>
+    <div class="row"><div>Theme</div><div class="seg">${seg}</div></div>
+    <div class="sublabel">Colour</div><div class="swatches">${swatches}</div>
+    <div class="sublabel">Font</div><div class="fontgrid">${fonts}</div>
+    <h3>Scoring</h3>
+    <p class="note">Each correct number scores points, more on harder levels. Completing a row, column or box earns a bonus.
+      Finish under the target time (${par}) to earn a time bonus of up to double your score — the faster, the bigger.
+      Numbers filled by a hint score nothing.</p>
+    <h3>How levels work</h3>
+    <p class="note">Every puzzle is solved by a built-in solver that works like a person: it always tries the easiest
+      technique first. A puzzle's level is the hardest technique it needs — the same idea as the SE rating
+      used by enthusiasts. The number of starting clues doesn't decide the level.</p>
+  </div>`, [{label: 'Done', cls: 'primary'}]);
+
+  const body = $('settingsBody');
+  const mark = (sel, el) => body.querySelectorAll(sel).forEach(x => x.classList.toggle('on', x === el));
+  const changed = () => { saveSettings(); applyTheme(); if (screen === 'game') render(); };
+  body.addEventListener('click', e => {
+    const t = e.target.closest('[data-theme],[data-colour],[data-font],[data-step],[data-hstep],[data-pace],[data-family]');
+    if (!t || !body.contains(t)) return;
+    if (t.dataset.theme) { settings.theme = t.dataset.theme; mark('[data-theme]', t); }
+    if (t.dataset.pace) { settings.pace = t.dataset.pace; mark('[data-pace]', t); }
+    if (t.dataset.family) {
+      const f = t.dataset.family, on = !settings.families.includes(f);
+      settings.families = on ? [...settings.families, f] : settings.families.filter(x => x !== f);
+      t.classList.toggle('on', on);
+    }
+    if (t.dataset.hstep) {
+      const k = HINT_STEPS.indexOf(settings.hintsPerGame) + +t.dataset.hstep;
+      settings.hintsPerGame = HINT_STEPS[Math.max(0, Math.min(HINT_STEPS.length - 1, k))];
+      $('hintVal').textContent = hintLabel(settings.hintsPerGame);
+    }
+    if (t.dataset.colour) { settings.colour = t.dataset.colour; mark('.swatch', t); }
+    if (t.dataset.font) { settings.font = t.dataset.font; mark('.fontopt', t); }
+    if (t.dataset.step) {
+      const k = MISTAKE_STEPS.indexOf(settings.maxMistakes) + +t.dataset.step;
+      settings.maxMistakes = MISTAKE_STEPS[Math.max(0, Math.min(MISTAKE_STEPS.length - 1, k))];
+      $('mistakeVal').textContent = mistakeLabel(settings.maxMistakes);
+    }
+    changed();
+  });
+  $('customColour').addEventListener('input', e => {
+    settings.colour = 'custom'; settings.customColour = e.target.value;
+    $('customSwatch').style.background = e.target.value;
+    mark('.swatch', $('customSwatch'));
+    changed();
+  });
+  body.querySelectorAll('[data-set]').forEach(inp => inp.addEventListener('change', () => {
+    settings[inp.dataset.set] = inp.checked;
+    if (inp.dataset.set === 'training') syncTraining();
+    changed();
+  }));
+}
+
+// ---------- game flow ----------
+const hintAllowance = () => settings.hintsPerGame || -1; // -1 = unlimited
+
+function startGame(diff, found) {
+  // Leaving an unfinished (scored) game counts as a loss for the streak.
+  if (G && G.status !== 'won' && !G.assisted && stats.byDiff[G.diff]) stats.byDiff[G.diff].streak = 0;
+  const training = !!settings.training;
+  const {puzzle: p, solution: s} = E.transform(found.puzzle, found.solution, settings.symmetric);
+  const puzzle = E.fromStr(p), solution = E.fromStr(s);
+  G = {
+    diff, puzzle, solution, meta: found.meta, board: puzzle.slice(), notes: Array(81).fill(0), scored: Array(81).fill(0),
+    empties: puzzle.filter(v => !v).length, mistakes: 0, score: 0, cellPts: 0, unitPts: 0, timeBonus: 0,
+    unitsDone: Array(27).fill(0), elims: [], time: 0, hints: training ? -1 : hintAllowance(),
+    history: [], status: 'playing', secondChance: false, sel: -1, notesMode: false,
+    training, assisted: training, // training games are coached and never scored
+  };
+  if (!training) stats.byDiff[diff].started++;
+  saveStats(); saveGame();
+  paused = false;
+  hintView = null;
+  openScreen('game');
+}
+
+async function newGame(diff) {
+  const level = DIFFS[diff].level, prefs = {...puzzlePrefs(), minClues: DIFFS[diff].minClues};
+  const banked = level >= 3 && takeFromBank(level, prefs);
+  if (banked) return startGame(diff, banked);
+  const label = DIFFS[diff].label;
+  $('loadingText').textContent = `Finding a${/^[AEIOU]/.test(label) ? 'n' : ''} ${label} puzzle…`;
+  $('loadingSub').textContent = '';
+  $('loading').classList.add('on');
+  const progress = n => { $('loadingSub').textContent = `${n} puzzles checked`; };
+  let found = await searchPuzzle(level, prefs, progress);
+  if (!found && job === null && $('loading').classList.contains('on') && (prefs.families.length || prefs.pace !== 'any')) {
+    // Nothing matched the favourites in time: relax them rather than leave the player waiting.
+    $('loadingText').textContent = 'Nothing matched your favourites yet — finding any puzzle at this level…';
+    found = await searchPuzzle(level, {symmetric: prefs.symmetric, minClues: prefs.minClues}, progress);
+  }
+  $('loading').classList.remove('on');
+  if (found) startGame(diff, found);
+}
+
+function cancelSearch() {
+  $('loading').classList.remove('on');
+  if (job) job.cancel();
+}
+
+function continueGame() {
+  paused = false;
+  openScreen('game');
+  if (G.status === 'lost') showLost();
+}
+
+function commit() { saveGame(); render(); }
+function pushHistory(i) {
+  G.history.push({i, v: G.board[i], n: G.notes.slice()});
+  if (G.history.length > 300) G.history.shift();
+}
+
+function select(i) {
+  if (!playing()) return;
+  if (!G.training) hintView = null;
+  G.sel = i;
+  render();
+}
+
+function clearPeerNotes(i, d) {
+  const m = ~(1 << d);
+  for (const p of PEERS[i]) G.notes[p] &= m;
+}
+
+// Celebrates any row, column or box the move at i just completed (and a number placed all nine times):
+// a ripple outward from the move, a banner, a chime, and a bonus the first time each unit is finished.
+function celebrate(i, fromHint) {
+  const names = [], d = G.solution[i];
+  let bonus = 0;
+  flashing.clear();
+  UNITS.forEach((u, k) => {
+    if (!u.includes(i) || !u.every(j => G.board[j] === G.solution[j])) return;
+    names.push(['row', 'column', 'box'][k % 3]);
+    if (!G.unitsDone[k]) { G.unitsDone[k] = 1; if (!fromHint && !G.assisted) bonus += DIFFS[G.diff].pts; }
+    for (const j of u) {
+      const step = Math.abs(RO[j] - RO[i]) + Math.abs(CO[j] - CO[i]);
+      flashing.set(j, Math.min(flashing.get(j) ?? 99, step));
+    }
+  });
+  const digitDone = G.board.filter((v, j) => v === d && G.solution[j] === d).length === 9;
+  if (digitDone) G.board.forEach((v, j) => { if (v === d && !flashing.has(j)) flashing.set(j, 0); });
+  if (!names.length && !digitDone) return;
+
+  G.unitPts += bonus;
+  G.score += bonus;
+  const title = names.length
+    ? names.map((n, k) => k ? n : n[0].toUpperCase() + n.slice(1)).join(', ').replace(/, ([^,]*)$/, ' & $1') + ' complete!'
+    : `All ${d}s placed!`;
+  const sub = [bonus ? `+${fmtNum(bonus)} bonus` : '', names.length && digitDone ? `All ${d}s placed!` : ''].filter(Boolean).join(' · ');
+  banner(title + (sub ? `<small>${sub}</small>` : ''));
+  chime(names.length > 1 || digitDone ? [523, 659, 784, 1047] : [523, 659, 784]);
+  buzz([30, 40, 60]);
+  clearTimeout(celebrate.t);
+  celebrate.t = setTimeout(() => { flashing.clear(); if (G) render(); }, Math.max(...flashing.values()) * 55 + 800);
+}
+
+function input(d) {
+  if (!playing()) return;
+  if (hintView && !G.training) { hintView = null; render(); }
+  const i = G.sel;
+  if (i < 0) { toast('Select a square first'); return; }
+  if (isLocked(i)) return;
+  if (G.notesMode) {
+    if (G.board[i]) return;
+    pushHistory(i);
+    G.notes[i] ^= 1 << d;
+    return commit();
+  }
+  if (G.board[i] === d) return;
+  pushHistory(i);
+  G.board[i] = d;
+  G.notes[i] = 0;
+  popCell = i;
+  if (d === G.solution[i]) {
+    if (!G.scored[i]) {
+      G.scored[i] = 1;
+      if (!G.assisted) { G.score += DIFFS[G.diff].pts; G.cellPts += DIFFS[G.diff].pts; }
+    }
+    if (settings.autoNotes) clearPeerNotes(i, d);
+    celebrate(i, false);
+    if (isSolved()) return win();
+  } else {
+    G.mistakes++;
+    buzz(120);
+    chime([196], 0);
+    if (settings.maxMistakes && !G.training && G.mistakes >= settings.maxMistakes) {
+      G.status = 'lost';
+      commit();
+      return setTimeout(showLost, 300);
+    }
+  }
+  commit();
+}
+
+function erase() {
+  if (hintView) { hintView = null; render(); }
+  if (!playing() || G.sel < 0) return;
+  const i = G.sel;
+  if (isLocked(i) || (!G.board[i] && !G.notes[i])) return;
+  pushHistory(i);
+  G.board[i] = 0; G.notes[i] = 0;
+  commit();
+}
+
+function undo() {
+  if (!playing()) return;
+  hintView = null;
+  const h = G.history.pop();
+  if (!h) { toast('Nothing to undo'); return; }
+  G.board[h.i] = h.v; G.notes = h.n; G.sel = h.i;
+  commit();
+}
+
+// ---------- technique lessons ----------
+// One lesson per technique family: what it is, how to spot it, and why the logic holds.
+const LESSONS = {
+  fullHouse: {title: 'Full House', techs: ['fullHouse'],
+    what: 'The last empty square in a row, column or box.',
+    spot: 'Look for a row, column or box with eight numbers already filled in.',
+    why: 'Every row, column and box holds 1 to 9 exactly once, so the one missing number must go in the one empty square.'},
+  hiddenSingle: {title: 'Hidden Single', techs: ['hiddenSingleBox', 'hiddenSingleLine'],
+    what: 'A number that has only one possible square left in a row, column or box.',
+    spot: 'Pick a number — say 6 — and a box that has no 6 yet. Follow the 6s already on the board: each one rules out every square in its row and its column. ' +
+      'If only one square in the box is left, the 6 goes there. Boxes are the easiest place to start; rows and columns work the same way.',
+    why: 'The box must contain a 6 somewhere. If every square but one is ruled out, there is nowhere else for it to go.'},
+  nakedSingle: {title: 'Naked Single', techs: ['nakedSingle'],
+    what: 'A square where only one number is still possible.',
+    spot: 'Choose an empty square and look along its row, its column and its box, crossing off every number you see. ' +
+      'If eight numbers are crossed off, the ninth is the answer. Squares in busy rows and boxes are the best ones to check.',
+    why: 'The square must hold one of 1 to 9, and every other number already appears somewhere it can see.'},
+  pointing: {title: 'Pointing', techs: ['pointing'],
+    what: 'Inside a box, all the places for a number lie in a single row (or a single column).',
+    spot: 'With pencilmarks filled in, look at one number within one box. If its candidates are all lined up in one row or column, they "point" along that line.',
+    why: 'The box\'s copy of that number must be somewhere on that line — so the line\'s copy is used up inside the box. ' +
+      'Remove the number from the rest of that row or column, outside the box.'},
+  claiming: {title: 'Box/Line Reduction', techs: ['claiming'],
+    what: 'In a row (or column), all the places for a number fall inside one box.',
+    spot: 'Follow one number along a row or column. If all of its candidates sit within the same box, you have one.',
+    why: 'The row\'s copy of the number must be in that box — so the box can\'t have that number anywhere else. Remove it from the box\'s other squares.'},
+  nakedSubset: {title: 'Naked Pairs, Triples & Quads', techs: ['nakedPair', 'nakedTriple', 'nakedQuad'],
+    what: 'Two squares in a row, column or box that can only hold the same two numbers — or three squares limited to three numbers, or four to four.',
+    spot: 'Look for squares with very few candidates. Two squares in the same unit both showing just 2 and 7 are a naked pair. ' +
+      'For a triple, the three squares together use only three numbers — they don\'t each need all three (2/7, 7/9 and 2/9 is a triple).',
+    why: 'Those numbers are locked into those squares, whichever way round they go, so no other square in the unit can hold them.'},
+  hiddenSubset: {title: 'Hidden Pairs, Triples & Quads', techs: ['hiddenPair', 'hiddenTriple', 'hiddenQuad'],
+    what: 'Two numbers that can only go in the same two squares of a row, column or box — or three numbers in three squares, or four in four.',
+    spot: 'Count the places each missing number can go in one unit. If 3 and 8 each fit only in the same two squares, they form a hidden pair — ' +
+      'even though those squares may show other candidates too.',
+    why: 'Those squares must hold 3 and 8, so all their other candidates can be removed. Hidden sets are often easier to find by counting places than by reading notes.'},
+  fish: {title: 'X-Wing, Swordfish & Jellyfish', techs: ['xWing', 'swordfish', 'jellyfish'],
+    what: 'A pattern for one number across two rows (X-Wing), three (Swordfish) or four (Jellyfish), whose places all fall in the same number of columns — or the same with rows and columns swapped.',
+    spot: 'X-Wing: find two rows where a number has exactly two possible squares, sitting in the same two columns — the four squares form a rectangle. ' +
+      'Swordfish and Jellyfish stretch the idea to three or four rows; each row only needs two or more of the shared columns.',
+    why: 'Each of those rows must put the number in one of those columns. Between them they use up the number in every one of those columns, ' +
+      'so it can be removed from all the other squares in those columns.'},
+  skyscraper: {title: 'Skyscraper', techs: ['skyscraper'],
+    what: 'Two rows (or columns) where a number has exactly two places each, with one place from each lined up.',
+    spot: 'Find a number that appears exactly twice in two different rows. If one end of each shares a column, that is the base; the other two ends are the tops of the towers.',
+    why: 'The two base squares share a column, so at most one of them is the number. That means at least one of the tops must be it — ' +
+      'so any square that sees both tops cannot hold the number.'},
+  twoStringKite: {title: 'Two-String Kite', techs: ['twoStringKite'],
+    what: 'A row and a column where a number has exactly two places each, joined through one box.',
+    spot: 'Look for a number that is only twice in a row and only twice in a column, where one end of each lands in the same box (but not the same square).',
+    why: 'The two joined ends share a box, so they can\'t both be the number — which means one of the free ends must be. ' +
+      'The square where the free ends\' row and column cross sees both of them, so it loses the number.'},
+  xyWing: {title: 'XY-Wing', techs: ['xyWing'],
+    what: 'Three two-number squares: a pivot holding X and Y, and two "pincers" it can see, holding X and Z, and Y and Z.',
+    spot: 'Find a square with just two candidates — the pivot. Look for a square it can see that shares one of its numbers plus a new number Z, ' +
+      'and another that shares its other number plus the same Z.',
+    why: 'If the pivot is X, the X/Z pincer must be Z; if the pivot is Y, the Y/Z pincer must be Z. Either way one pincer is Z, ' +
+      'so any square that sees both pincers can\'t be Z.'},
+  xyzWing: {title: 'XYZ-Wing', techs: ['xyzWing'],
+    what: 'Like an XY-Wing, but the pivot holds three numbers X, Y and Z, and both pincers (X/Z and Y/Z) share Z with it.',
+    spot: 'Find a three-candidate square with two two-candidate squares it can see, each made only of the pivot\'s numbers and both containing the same Z.',
+    why: 'Z must end up in one of the three squares, so only squares that see all three — the pivot and both pincers — can lose Z. These are usually in the pivot\'s box.'},
+  simpleColouring: {title: 'Simple Colouring', techs: ['simpleColouring'],
+    what: 'Following one number through its "conjugate pairs" — the places where it can only be in two squares of a row, column or box.',
+    spot: 'Pick a number. Wherever a unit has it in exactly two squares, join those squares. Colour the joined squares alternately — say blue and amber — all along the chain.',
+    why: 'One colour must be all the number and the other none of it. A square that sees both colours can\'t hold the number (a trap). ' +
+      'If two squares of the same colour see each other, that colour must be the false one (a wrap) and all its squares lose the number.'},
+  xyChain: {title: 'XY-Chain', techs: ['xyChain'],
+    what: 'A chain of two-number squares, each seeing the next, that passes one number along from link to link.',
+    spot: 'Start at a two-candidate square and pick one of its numbers, Z. Step to a square it sees that shares its other number, then keep going through the other number each time, ' +
+      'until you reach a square whose remaining number is Z again.',
+    why: 'If the first square isn\'t Z, each square in turn is forced, and the last one becomes Z. So one end or the other is Z, and any square that sees both ends can\'t be Z. ' +
+      'An XY-Wing is the shortest possible XY-Chain.'},
+};
+const lessonFor = techId => Object.keys(LESSONS).find(k => LESSONS[k].techs.includes(techId));
+
+function showLesson(key, back) {
+  const L = LESSONS[key], lv = E.TECH[L.techs[0]].level;
+  showModal(`<h2>${L.title}</h2><p><span class="chip lesson-chip">${levelLabel(lv)}</span></p>
+    <div class="lesson"><h3>What it is</h3><p>${L.what}</p><h3>How to spot it</h3><p>${L.spot}</p><h3>Why it works</h3><p>${L.why}</p></div>`,
+    back ? [{label: 'All techniques', cls: '', onClick: showLearn}, {label: 'Got it', cls: 'primary'}] : [{label: 'Got it', cls: 'primary'}]);
+}
+
+function showLearn() {
+  const groups = [1, 2, 3, 4, 5].map(lv => {
+    const keys = Object.keys(LESSONS).filter(k => E.TECH[LESSONS[k].techs[0]].level === lv);
+    return `<h3>${levelLabel(lv)}</h3>` + keys.map(k => `<button class="btn" data-lesson="${k}">${LESSONS[k].title}</button>`).join('');
+  }).join('');
+  showModal(`<h2>Learn techniques</h2><p>From the first steps to the hardest patterns this game uses. Turn on Training mode to see them in a real puzzle.</p>
+    <div class="difflist" id="learnList">${groups}</div>`, [{label: 'Close', cls: 'ghost'}]);
+  $('learnList').addEventListener('click', e => {
+    const b = e.target.closest('[data-lesson]');
+    if (b) showLesson(b.dataset.lesson, true);
+  });
+}
+
+// ---------- hints ----------
+// A hint teaches rather than reveals: first a nudge (the technique and where to look), then the pattern
+// explained on the board, then — only if asked — the move is made. Wrong numbers and broken notes come first,
+// because every later step would build on them.
+const levelLabel = lv => Object.values(DIFFS).find(d => d.level === lv && !d.minClues).label;
+
+// What a careful solver knows from here: the correct numbers placed plus eliminations from earlier hints.
+function hintState() {
+  const s = E.makeState(G.board.map((v, i) => v === G.solution[i] ? v : 0));
+  for (const [i, m] of G.elims) if (!s.g[i]) s.c[i] &= ~m;
+  return s;
+}
+function makeView(o) {
+  return {area: new Set(o.area || []), focus: new Set(o.focus || []), focusB: new Set(o.focusB || []),
+    target: new Set(o.target || []), elim: new Map(o.elim || []), cands: new Map(o.cands || []), digits: o.digits || 0};
+}
+function stepView(step, s) {
+  const elim = (step.elim || []).map(e => [e.i, e.m]);
+  const involved = new Set([...(step.focus || []), ...(step.focusB || []), ...elim.map(e => e[0])]);
+  return makeView({area: step.area, focus: step.focus, focusB: step.focusB, target: (step.place || []).map(p => p.i), elim,
+    cands: step.place ? [] : [...involved].filter(i => !s.g[i]).map(i => [i, s.c[i]]), digits: step.digits});
+}
+
+// The next thing worth saying about the position: a wrong number, a broken note, or the next technique step.
+// stage 1 = nudge only, stage 2 = full explanation.
+function buildHint(stage) {
+  const wrong = G.board.findIndex((v, i) => v && v !== G.solution[i]);
+  if (wrong >= 0) return {kind: 'wrong', cell: wrong, view: makeView({focus: [wrong]})};
+  const s = hintState();
+  const badNote = G.notes.findIndex((m, i) => m && !G.board[i] && !(m & (1 << G.solution[i])));
+  if (badNote >= 0) return {kind: 'notes', cell: badNote, state: s, view: makeView({focus: [badNote]})};
+  let step = E.findStep(s, 5);
+  // If the player has already crossed those candidates out of their notes, accept it and look further.
+  while (step && step.elim && step.elim.every(e => G.notes[e.i] && !(G.notes[e.i] & e.m))) {
+    for (const e of step.elim) { G.elims.push([e.i, e.m]); s.c[e.i] &= ~e.m; }
+    step = E.findStep(s, 5);
+  }
+  if (!step) return {kind: 'none', view: null};
+  return {kind: 'step', stage, step, state: s, view: stage === 1 ? makeView({area: step.area}) : stepView(step, s)};
+}
+
+function hint() {
+  if (!playing() || G.training) return;
+  hintView = hintView ? null : buildHint(1);
+  render();
+}
+
+// Training mode: the coach always shows the next step in full. It is rebuilt only when the position
+// changes, so the player can still select other squares; a new placement step selects its square.
+const coachSig = () => G.board.join('') + '|' + G.notes.join(',') + '|' + G.elims.length;
+function refreshCoach() {
+  if (hintView && hintView.training && hintView.sig === coachSig()) return;
+  const h = buildHint(2);
+  if (h.kind === 'step' && h.step.place) G.sel = h.step.place[0].i;
+  h.training = true;
+  h.sig = coachSig();
+  hintView = h;
+}
+function syncTraining() {
+  if (!G || G.status !== 'playing') return;
+  G.training = settings.training;
+  if (G.training) { G.assisted = true; G.hints = -1; }
+  hintView = null;
+  saveGame();
+}
+
+function renderHint() {
+  const panel = $('hintPanel'), h = hintView;
+  if (!h || screen !== 'game') { panel.classList.remove('on'); return; }
+  panel.classList.toggle('coach', !!h.training);
+  if (h.training) return renderCoach(panel, h);
+  const canShow = G.hints !== 0;
+  let title, chip = '', text, buttons;
+  if (h.kind === 'wrong') {
+    title = 'Check this square';
+    text = `The ${G.board[h.cell]} in ${E.cellName(h.cell)} doesn't fit the solution. Erase it before going on — any step that relies on it will go wrong.`;
+    buttons = [['hintEraseWrong', 'Erase it', 'primary']];
+  } else if (h.kind === 'notes') {
+    title = 'Check your pencilmarks';
+    text = `Your pencilmarks in ${E.cellName(h.cell)} leave out a number that can still go there, so they could lead you astray.`;
+    buttons = [['hintFixNotes', 'Fix these pencilmarks', 'primary']];
+  } else if (h.kind === 'none') {
+    title = 'No step found';
+    text = `The solver doesn't know a technique that helps from here. You can reveal a square instead${G.hints === 0 ? ' (no ideas left)' : ''}.`;
+    buttons = [['hintReveal', 'Reveal a square', 'primary', !canShow]];
+  } else {
+    const st = h.step;
+    title = st.name;
+    chip = levelLabel(st.level);
+    if (h.stage === 1) {
+      text = st.nudge;
+      buttons = [['hintShow', canShow ? 'Show me' : 'No ideas left', 'primary', !canShow]];
+    } else {
+      text = st.text + (st.elim ? '<br><small>Struck-through red candidates are the ones removed.</small>' : '');
+      buttons = [['hintApply', st.place ? 'Fill it in' : 'Apply to my pencilmarks', 'primary']];
+    }
+  }
+  buttons.push(['hintClose', 'Close', '']);
+  panel.innerHTML = `<h4>${title}${chip ? `<span class="chip">${chip}</span>` : ''}</h4><p>${text}</p><div class="hbtns">` +
+    buttons.map(([act, label, cls, off]) => `<button class="btn ${cls}" data-act="${act}" ${off ? 'disabled' : ''}>${label}</button>`).join('') + '</div>';
+  panel.classList.add('on');
+}
+
+function renderCoach(panel, h) {
+  let title, chip = 'Training', text, buttons;
+  if (h.kind === 'wrong') {
+    title = 'Check this square';
+    text = `The ${G.board[h.cell]} in ${E.cellName(h.cell)} doesn't fit. Erase it — every later step depends on the board being right.`;
+    buttons = [['hintEraseWrong', 'Erase it', 'primary']];
+  } else if (h.kind === 'notes') {
+    title = 'Check your pencilmarks';
+    text = `Your pencilmarks in ${E.cellName(h.cell)} leave out a number that can still go there.`;
+    buttons = [['hintFixNotes', 'Fix these pencilmarks', 'primary']];
+  } else if (h.kind === 'none') {
+    title = 'No step found';
+    text = 'The coach doesn\'t know a technique that helps from here, so it can reveal a square for you.';
+    buttons = [['hintReveal', 'Reveal a square', 'primary']];
+  } else {
+    const st = h.step, d = st.place && st.place[0].d;
+    title = st.name;
+    chip = levelLabel(st.level);
+    text = st.text + (st.place
+      ? `<br><b>Tap ${d} to place it — or press Next.</b>`
+      : `<br><b>Cross the red candidates out of your pencilmarks — or press Next to do it for you.</b>`);
+    buttons = [['coachLesson', 'How it works', ''], ['hintApply', 'Next ▸', 'primary']];
+  }
+  // With the tool row hidden in training, Undo lives here — and Notes too, when the step is about crossing out candidates.
+  const icons = `<button class="iconbtn" data-act="undo" aria-label="Undo"><svg class="i" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg></button>` +
+    (h.step && h.step.elim ? `<button class="iconbtn ${G.notesMode ? 'on' : ''}" data-act="notes" aria-label="Pencilmarks"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : '');
+  panel.innerHTML = `<h4>${title}<span class="chip">${chip}</span></h4><p>${text}</p><div class="hbtns">${icons}` +
+    buttons.map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${label}</button>`).join('') + '</div>';
+  panel.classList.add('on');
+}
+
+const hintActions = {
+  coachLesson() { if (hintView && hintView.step) showLesson(lessonFor(hintView.step.tech)); },
+  hintClose() { hintView = null; render(); },
+  hintShow() {
+    if (!hintView || G.hints === 0) return;
+    if (G.hints > 0) G.hints--;
+    hintView.stage = 2;
+    hintView.view = stepView(hintView.step, hintView.state);
+    commit();
+  },
+  hintApply() {
+    const {step, state} = hintView;
+    hintView = null;
+    if (step.place) {
+      for (const {i, d} of step.place) {
+        pushHistory(i);
+        G.sel = i;
+        G.board[i] = d; G.notes[i] = 0; G.scored[i] = 1; popCell = i;
+        clearPeerNotes(i, d);
+        celebrate(i, true);
+      }
+      if (isSolved()) return win();
+    } else {
+      // Fill in the candidates of every square the step talks about (if the player hadn't noted them), then remove.
+      pushHistory(step.elim[0].i);
+      for (const e of step.elim) G.elims.push([e.i, e.m]);
+      for (const i of new Set([...(step.focus || []), ...(step.focusB || []), ...step.elim.map(e => e.i)])) {
+        if (!G.board[i] && !G.notes[i]) G.notes[i] = state.c[i];
+      }
+      for (const e of step.elim) G.notes[e.i] &= ~e.m;
+    }
+    commit();
+  },
+  hintEraseWrong() {
+    const i = hintView.cell;
+    hintView = null;
+    pushHistory(i);
+    G.board[i] = 0; G.notes[i] = 0; G.sel = i;
+    commit();
+  },
+  hintFixNotes() {
+    const {cell, state} = hintView;
+    hintView = null;
+    pushHistory(cell);
+    G.notes[cell] = state.c[cell];
+    commit();
+  },
+  // Fallback when no known technique applies: reveal the selected (or a random) open square.
+  hintReveal() {
+    hintView = null;
+    if (G.hints === 0) return render();
+    let i = G.sel;
+    if (i < 0 || isLocked(i)) {
+      const open = [...Array(81).keys()].filter(j => !isLocked(j));
+      i = open[Math.random() * open.length | 0];
+    }
+    if (G.hints > 0) G.hints--;
+    pushHistory(i);
+    G.board[i] = G.solution[i]; G.notes[i] = 0; G.scored[i] = 1; G.sel = i; popCell = i;
+    clearPeerNotes(i, G.solution[i]);
+    celebrate(i, true);
+    if (isSolved()) return win();
+    commit();
+  },
+};
+
+function togglePause() {
+  if (!G || G.status !== 'playing') return;
+  paused = !paused;
+  render();
+}
+
+function restart() {
+  if (!G) return;
+  showModal('<h2>Restart puzzle?</h2><p>Your entries, notes, score and mistakes on this puzzle will be cleared.</p>', [
+    {label: 'Restart', cls: 'primary', onClick() {
+      Object.assign(G, {board: G.puzzle.slice(), notes: Array(81).fill(0), scored: Array(81).fill(0), mistakes: 0,
+        score: 0, cellPts: 0, unitPts: 0, timeBonus: 0, unitsDone: Array(27).fill(0), elims: [], time: 0,
+        hints: G.training ? -1 : hintAllowance(),
+        history: [], status: 'playing', secondChance: false, sel: -1});
+      paused = false;
+      hintView = null;
+      commit();
+    }},
+    {label: 'Cancel', cls: 'ghost'},
+  ]);
+}
+
+// The solver's path for this puzzle: hardest techniques first, with how often each was needed.
+function techniqueSummary() {
+  if (!G.meta || !G.meta.used) return '';
+  const byName = {};
+  for (const [id, n] of Object.entries(G.meta.used)) {
+    const t = E.TECH[id], e = byName[t.name] = byName[t.name] || {name: t.name, level: t.level, n: 0};
+    e.n += n;
+  }
+  const items = Object.values(byName).sort((a, b) => b.level - a.level || b.n - a.n);
+  return `<p class="note" style="text-align:center">Rating ${G.meta.se.toFixed(1)} · Techniques: ` +
+    items.map(t => `${t.name} ×${t.n}`).join(', ') + '</p>';
+}
+
+// Time bonus: finishing at 0:00 would double the score, at the target time it adds nothing.
+function win() {
+  G.status = 'won';
+  G.sel = -1;
+  hintView = null;
+  if (G.assisted) {
+    commit();
+    setTimeout(() => { confetti(); chime([523, 659, 784, 1047, 1319, 1568], 0.1); }, 500);
+    setTimeout(() => showModal(`<div class="big">🎓</div><h2>Training puzzle complete!</h2>
+      <p>${DIFFS[G.diff].label} · ${fmtTime(G.time)}<br>Coached games don't count towards your score or statistics.</p>
+      ${techniqueSummary()}`, [
+        {label: 'New Game', cls: 'primary', onClick: chooseDifficulty},
+        {label: 'Home', cls: 'ghost', onClick: goHome},
+      ], false), 1500);
+    return;
+  }
+  const diff = DIFFS[G.diff], s = stats.byDiff[G.diff];
+  G.timeBonus = Math.round(G.score * Math.max(0, (diff.par - G.time) / diff.par));
+  G.score += G.timeBonus;
+  const newBest = s.best == null || G.time < s.best;
+  const newBestScore = s.bestScore == null || G.score > s.bestScore;
+  s.won++; s.totalTime += G.time;
+  if (newBest) s.best = G.time;
+  if (newBestScore) s.bestScore = G.score;
+  s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak);
+  stats.allTime += G.score;
+  saveStats();
+  commit();
+  buzz([60, 60, 60]);
+  setTimeout(() => { confetti(); chime([523, 659, 784, 1047, 1319, 1568], 0.1); }, 500);
+  const badges = [newBestScore && 'New best score!', newBest && 'New best time!'].filter(Boolean).join(' · ');
+  setTimeout(() => showModal(`<div class="big">🎉</div><h2>Puzzle solved!</h2>
+    <p>${diff.label}${badges ? ' · ' + badges : ''}</p>
+    <div class="summary">
+      <div><span>Time</span><b>${fmtTime(G.time)}</b></div>
+      <div><span>Target time</span><b>${fmtTime(diff.par)}</b></div>
+    </div>
+    <div class="breakdown">
+      <div><span>Numbers placed</span><b>+${fmtNum(G.cellPts)}</b></div>
+      <div><span>Rows, columns &amp; boxes</span><b>+${fmtNum(G.unitPts)}</b></div>
+      <div><span>Time bonus${G.timeBonus ? '' : ' <small>(beat the target)</small>'}</span><b>+${fmtNum(G.timeBonus)}</b></div>
+      <div><span>Score</span><b>${fmtNum(G.score)}</b></div>
+    </div>
+    ${techniqueSummary()}
+    <p>Win streak: ${s.streak} · Best score: ${fmtNum(s.bestScore)}</p>`, [
+      {label: 'New Game', cls: 'primary', onClick: () => newGame(G.diff)},
+      {label: 'Home', cls: 'ghost', onClick: goHome},
+    ], false), 1500);
+}
+
+function showLost() {
+  const buttons = [];
+  if (!G.secondChance) buttons.push({label: 'Second Chance', cls: 'primary', onClick() {
+    G.secondChance = true; G.mistakes = Math.max(0, (settings.maxMistakes || 1) - 1); G.status = 'playing'; commit();
+  }});
+  buttons.push({label: 'New Game', cls: G.secondChance ? 'primary' : '', onClick: chooseDifficulty});
+  buttons.push({label: 'Home', cls: 'ghost', onClick: goHome});
+  showModal(`<h2>Game over</h2><p>You made ${mistakeLabel(G.mistakes)}.${G.secondChance ? '' : '<br>Take a second chance to keep going with one mistake left.'}</p>`,
+    buttons, false);
+}
+
+// ---------- timer ----------
+setInterval(() => {
+  if (screen !== 'game' || !G || G.status !== 'playing' || paused || document.hidden) return;
+  G.time++;
+  updateTimer();
+  if (G.time % 5 === 0) saveGame();
+}, 1000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && G) {
+    if (screen === 'game' && G.status === 'playing') { paused = true; render(); }
+    saveGame();
+  }
+});
+
+// ---------- events ----------
+const actions = {
+  home: goHome, settings: showSettings, continue: continueGame, newgame: chooseDifficulty,
+  stats: () => openScreen('stats'), learn: showLearn, restart, pause: togglePause, undo, erase, hint, cancelSearch,
+  notes() { if (!playing()) return; hintView = null; G.notesMode = !G.notesMode; commit(); },
+  ...hintActions,
+};
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (b && actions[b.dataset.act]) actions[b.dataset.act]();
+  const t = e.target.closest('[data-tab]');
+  if (t) { statsTab = t.dataset.tab; renderStats(); }
+});
+document.addEventListener('keydown', e => {
+  if (screen !== 'game' || !G || $('modal').classList.contains('open')) return;
+  if (e.key >= '1' && e.key <= '9') return input(+e.key);
+  if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') return erase();
+  if (e.key === 'n' || e.key === 'N') return actions.notes();
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') return undo();
+  if (e.key === ' ') { e.preventDefault(); return togglePause(); }
+  const mv = {ArrowUp: -9, ArrowDown: 9, ArrowLeft: -1, ArrowRight: 1}[e.key];
+  if (mv && playing()) {
+    e.preventDefault();
+    const s = G.sel < 0 ? 40 : G.sel, r = RO[s], c = CO[s];
+    const nr = (r + (mv === 9) - (mv === -9) + 9) % 9, nc = (c + (mv === 1) - (mv === -1) + 9) % 9;
+    select(nr * 9 + nc);
+  }
+});
+
+// ---------- start ----------
+applyTheme();
+if (history.state && history.state.s) history.replaceState(null, '');
+setScreen('home');
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
