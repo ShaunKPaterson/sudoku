@@ -8,7 +8,8 @@
 <title>Sudoku</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Loaded without blocking the first paint, so the loading screen shows at once on a slow connection. -->
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -93,6 +94,13 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .cell.box{background:var(--relbox)}
 .cell.rel{background:var(--rel)}
 .cell.same{background:var(--same)}
+/* number helper: "Shade" greys every square the focus number can't go in; "Lines" tints the rows and
+   columns its copies cover. Squares holding it use the "same" colour. */
+.cell.nx{background:color-mix(in srgb,var(--muted) 24%,var(--card))}
+.cell.nx:not(.user){color:color-mix(in srgb,var(--given) 55%,var(--card))}
+.cell.nl{background:color-mix(in srgb,var(--wrongbg) 75%,var(--card))}
+.num.focus{background:var(--accent);color:#fff}
+.num.focus .left{color:#fff;opacity:.85}
 .cell.sel{background:var(--accent);color:#fff;border-radius:10px}
 .cell.user{color:var(--user)}
 .cell.sel.user{color:#fff}
@@ -140,6 +148,9 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .lesson-chip{display:inline-block;font-size:12px;font-weight:600;background:var(--rel);color:var(--accent);padding:3px 10px;border-radius:10px}
 .sheet .lesson p{text-align:left;color:var(--text);margin:4px 2px 4px}
 .sheet .lesson h3{margin-top:14px}
+.lfig{margin:12px 0 4px;text-align:center}
+.lfig svg{display:block;width:100%;margin:0 auto;border-radius:12px;box-shadow:var(--soft-shadow);font-family:var(--font)}
+.lfig figcaption{font-size:13.5px;line-height:1.4;color:var(--muted);margin:8px 2px 0;text-align:left}
 .difflist h3{margin:16px 0 0}
 .loading div{text-align:center;max-width:300px}
 .loading small{display:block;font-weight:500;color:var(--muted);margin-top:6px}
@@ -197,7 +208,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .logo{width:96px;height:96px;margin-top:6vh}
 #home h1{font-size:38px;margin:14px 0 4px;letter-spacing:.5px}
 .alltime{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:17px;font-weight:600}
-.alltime svg{width:20px;height:20px}
+.alltime b{color:var(--text);font-weight:800}
 .home-actions{margin-top:auto;width:100%;padding:0 28px 7vh;display:flex;flex-direction:column}
 .btn{display:block;width:100%;border:0;border-radius:30px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;
   margin-top:12px;color:var(--accent);background:var(--rel)}
@@ -276,6 +287,16 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .toast.show{opacity:1}
 .loading{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,16,28,.35);z-index:70}
 .loading.on{display:flex}
+/* first-open loading screen: painted straight from the HTML, faded out once the game is ready */
+.splash{position:fixed;inset:0;z-index:90;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;color:var(--muted);font-weight:700;font-size:16px;transition:opacity .3s}
+.splash svg{width:88px;height:88px;animation:breathe 1.4s ease-in-out infinite}
+.splash .dots i{display:inline-block;width:8px;height:8px;margin:0 4px;border-radius:50%;background:var(--accent);animation:blink 1.2s infinite}
+.splash .dots i:nth-child(2){animation-delay:.2s}
+.splash .dots i:nth-child(3){animation-delay:.4s}
+.splash.gone{opacity:0;pointer-events:none}
+@keyframes breathe{50%{transform:scale(.92)}}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
 .loading div{background:var(--card);padding:16px 22px;border-radius:14px;box-shadow:var(--shadow);font-weight:600}
 @media (max-height:640px){
   .statcard{padding:6px 12px}
@@ -285,6 +306,15 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 </style>
 </head>
 <body>
+<div class="splash" id="splash" role="status">
+  <svg viewBox="0 0 96 96" aria-hidden="true">
+    <rect x="2" y="2" width="92" height="92" rx="20" fill="var(--accent)"/>
+    <g stroke="#fff" stroke-width="3" opacity=".9"><path d="M38 16v64M58 16v64M16 38h64M16 58h64"/></g>
+    <rect x="16" y="16" width="64" height="64" rx="6" fill="none" stroke="#fff" stroke-width="4"/>
+  </svg>
+  <span>Loading Sudoku…</span>
+  <span class="dots"><i></i><i></i><i></i></span>
+</div>
 <div class="app">
 
   <!-- Home -->
@@ -301,7 +331,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
       </g>
     </svg>
     <h1>Sudoku</h1>
-    <div class="alltime"><svg class="i" viewBox="0 0 24 24"><use href="#ic-trophy"/></svg><span id="homeAllTime">0</span></div>
+    <div class="alltime">Top score <b id="homeTop">0</b></div>
     <div class="home-actions">
       <button class="btn primary" id="btnContinue" data-act="continue">Continue<small id="continueInfo"></small></button>
       <button class="btn" id="btnNew" data-act="newgame">New Game</button>
@@ -373,9 +403,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
   <button class="btn" data-act="cancelSearch">Cancel</button></div></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="ic-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
-  <symbol id="ic-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></symbol>
-</svg>
+  <symbol id="ic-gear" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol></svg>
 
 <script src="engine.js"></script>
 <script>
@@ -384,11 +412,11 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 // ---------- constants ----------
 // Levels are defined by the hardest solving technique a puzzle needs (see engine.js), not by clue count.
 // pts: per correct number and per completed row/column/box. par: target time in seconds for the time bonus.
-// Beginner shares Easy's technique but starts with many more clues, so there is always plenty to find.
+// Beginner, Easy and Medium are also built to a recipe in engine.js (RECIPES) so there is always plenty to find.
 const DIFFS = {
-  beginner: {label: 'Beginner', level: 1, pts: 10,  par: 25 * 60,  minClues: 41, desc: 'Lots of numbers to start — hidden singles'},
-  easy:     {label: 'Easy',     level: 1, pts: 20,  par: 35 * 60,  desc: 'Hidden singles only'},
-  medium:   {label: 'Medium',   level: 2, pts: 40,  par: 50 * 60,  desc: 'Adds naked singles'},
+  beginner: {label: 'Beginner', level: 1, pts: 10,  par: 8 * 60,   desc: 'A quick, gentle game — hidden singles in boxes'},
+  easy:     {label: 'Easy',     level: 1, pts: 20,  par: 15 * 60,  desc: 'Hidden singles in boxes, rows and columns'},
+  medium:   {label: 'Medium',   level: 2, pts: 40,  par: 25 * 60,  desc: 'Adds naked singles'},
   hard:     {label: 'Hard',     level: 3, pts: 60,  par: 75 * 60,  desc: 'Pointing, box/line, pairs & triples'},
   expert:   {label: 'Expert',   level: 4, pts: 90,  par: 100 * 60, desc: 'X-Wing, Skyscraper, Kite, XY-Wing, Swordfish'},
   master:   {label: 'Master',   level: 5, pts: 130, par: 150 * 60, desc: 'XYZ-Wing, Jellyfish, Colouring, XY-Chains'},
@@ -494,7 +522,7 @@ function freshStats() {
 const settings = Object.assign(
   {theme: 'auto', maxMistakes: 3, highlightArea: true, highlightSame: true, autoNotes: true, showTimer: true,
    sounds: true, colour: 'blue', customColour: '#325aaf', font: 'rounded',
-   hintsPerGame: 3, symmetric: true, pace: 'any', families: [], training: false},
+   hintsPerGame: 3, symmetric: true, pace: 'any', families: [], training: false, numberHelper: 'shade'},
   store.get('settings', {}));
 if (typeof settings.mistakeLimit === 'boolean') { settings.maxMistakes = settings.mistakeLimit ? 3 : 0; delete settings.mistakeLimit; }
 // The "Soft" redesign brings its rounded font; switch existing players over once (they can change it back).
@@ -644,6 +672,19 @@ function render() {
   const hv = hintView && hintView.view, sel = hv && !hintView.training ? -1 : G.sel, selVal = sel >= 0 ? G.board[sel] : 0;
   let filled = 0;
   const counts = Array(10).fill(0);
+  // Number helper: for the number in focus, the squares it can't go in (Shade) or the rows and columns its
+  // correctly placed copies cover (Lines). Hidden while an Idea is being shown or once all nine are placed.
+  const fd = !hv && settings.numberHelper !== 'off' && G.status === 'playing' ? G.focus || 0 : 0;
+  const homes = fd ? G.board.flatMap((v, i) => v === fd && G.solution[i] === fd ? [i] : []) : [];
+  const helper = new Map();
+  if (homes.length && homes.length < 9) {
+    for (const h of homes) for (const p of PEERS[h]) {
+      if (settings.numberHelper === 'shade') helper.set(p, 'nx');
+      else if (RO[p] === RO[h] || CO[p] === CO[h]) helper.set(p, 'nl');
+    }
+    if (settings.numberHelper === 'shade') G.board.forEach((v, i) => { if (v) helper.set(i, 'nx'); });
+    for (const h of homes) helper.set(h, 'same');
+  }
   for (let i = 0; i < 81; i++) {
     const v = G.board[i], c = cells[i], correct = v && v === G.solution[i];
     if (correct) counts[v]++;
@@ -651,7 +692,9 @@ function render() {
     let cls = `cell r${RO[i]} c${CO[i]}${BO[i] % 2 === 0 ? ' tb' : ''}`;
     if (!G.puzzle[i] && v) cls += ' user';
     if (v && !correct) cls += ' wrong';
-    if (sel >= 0 && i !== sel && !hv) {
+    if (helper.size) {
+      if (helper.has(i) && i !== sel) cls += ' ' + helper.get(i);
+    } else if (sel >= 0 && i !== sel && !hv) {
       if (settings.highlightArea && (RO[i] === RO[sel] || CO[i] === CO[sel])) cls += ' rel';
       else if (settings.highlightArea && BO[i] === BO[sel]) cls += ' box';
       if (settings.highlightSame && selVal && v === selVal) cls += ' same';
@@ -695,6 +738,7 @@ function render() {
   $('mistakeBar').setAttribute('aria-label', max ? `${made} of ${max} mistakes used` : `${made} mistakes`);
   [...$('numpad').children].forEach((b, k) => {
     b.classList.toggle('done', counts[k + 1] >= 9);
+    b.classList.toggle('focus', helper.size > 0 && fd === k + 1);
     b.lastChild.textContent = `×${9 - counts[k + 1]}`;
   });
   $('notesBtn').classList.toggle('active', !!G.notesMode);
@@ -715,7 +759,8 @@ function updateTimer() {
 }
 
 function renderHome() {
-  $('homeAllTime').textContent = fmtNum(stats.allTime);
+  // Top score: the best single game on any level.
+  $('homeTop').textContent = fmtNum(Math.max(0, ...Object.values(stats.byDiff).map(s => s.bestScore || 0)));
   const canContinue = G && G.status !== 'won';
   $('btnContinue').style.display = canContinue ? '' : 'none';
   if (canContinue) $('continueInfo').textContent = `${DIFFS[G.diff].label}${G.training ? ' · Training' : ''} · ${fmtTime(G.time)}`;
@@ -813,6 +858,8 @@ function showSettings() {
   const par = Object.values(DIFFS).map(d => `${d.label} ${d.par / 60} min`).join(', ');
   const paceSeg = [['any', 'Any'], ['flowing', 'Flowing'], ['tight', 'Tight']].map(([k, l]) =>
     `<button data-pace="${k}" class="${settings.pace === k ? 'on' : ''}">${l}</button>`).join('');
+  const helperSeg = [['off', 'Off'], ['shade', 'Shade'], ['lines', 'Lines']].map(([k, l]) =>
+    `<button data-helper="${k}" class="${settings.numberHelper === k ? 'on' : ''}">${l}</button>`).join('');
   const famChips = E.FAMILIES.map(f =>
     `<button data-family="${f.id}" class="${settings.families.includes(f.id) ? 'on' : ''}">${f.name}</button>`).join('');
   showModal(`<h2>Settings</h2><div id="settingsBody">
@@ -832,6 +879,7 @@ function showSettings() {
     ${toggle(['symmetric', 'Symmetric clue layout', 'The classic newspaper look'])}
     <h3>Highlighting</h3>
     ${[['highlightArea', 'Highlight row, column & box'], ['highlightSame', 'Highlight identical numbers']].map(toggle).join('')}
+    <div class="row"><div>Number helper<small>Tap a number on the board, or on the pad with no square selected. Shade: grey out where it can't go. Lines: tint the rows and columns its copies cover.</small></div><div class="seg">${helperSeg}</div></div>
     <h3>Appearance</h3>
     <div class="row"><div>Theme</div><div class="seg">${seg}</div></div>
     <div class="sublabel">Colour</div><div class="swatches">${swatches}</div>
@@ -850,9 +898,10 @@ function showSettings() {
   const mark = (sel, el) => body.querySelectorAll(sel).forEach(x => x.classList.toggle('on', x === el));
   const changed = () => { saveSettings(); applyTheme(); if (screen === 'game') render(); };
   body.addEventListener('click', e => {
-    const t = e.target.closest('[data-theme],[data-colour],[data-font],[data-step],[data-hstep],[data-pace],[data-family]');
+    const t = e.target.closest('[data-theme],[data-colour],[data-font],[data-step],[data-hstep],[data-pace],[data-family],[data-helper]');
     if (!t || !body.contains(t)) return;
     if (t.dataset.theme) { settings.theme = t.dataset.theme; mark('[data-theme]', t); }
+    if (t.dataset.helper) { settings.numberHelper = t.dataset.helper; mark('[data-helper]', t); }
     if (t.dataset.pace) { settings.pace = t.dataset.pace; mark('[data-pace]', t); }
     if (t.dataset.family) {
       const f = t.dataset.family, on = !settings.families.includes(f);
@@ -910,7 +959,7 @@ function startGame(diff, found) {
 }
 
 async function newGame(diff) {
-  const level = DIFFS[diff].level, prefs = {...puzzlePrefs(), minClues: DIFFS[diff].minClues};
+  const level = DIFFS[diff].level, prefs = {...puzzlePrefs(), recipe: diff};
   const banked = level >= 3 && takeFromBank(level, prefs);
   if (banked) return startGame(diff, banked);
   const label = DIFFS[diff].label;
@@ -922,7 +971,7 @@ async function newGame(diff) {
   if (!found && job === null && $('loading').classList.contains('on') && (prefs.families.length || prefs.pace !== 'any')) {
     // Nothing matched the favourites in time: relax them rather than leave the player waiting.
     $('loadingText').textContent = 'Nothing matched your favourites yet — finding any puzzle at this level…';
-    found = await searchPuzzle(level, {symmetric: prefs.symmetric, minClues: prefs.minClues}, progress);
+    found = await searchPuzzle(level, {symmetric: prefs.symmetric, recipe: diff}, progress);
   }
   $('loading').classList.remove('on');
   if (found) startGame(diff, found);
@@ -945,10 +994,14 @@ function pushHistory(i) {
   if (G.history.length > 300) G.history.shift();
 }
 
+// Tapping a number on the board puts it in focus for the number helper; tapping the selected square again
+// lets go of the selection and the focus.
 function select(i) {
   if (!playing()) return;
   if (!G.training) hintView = null;
+  if (i === G.sel && !G.training) { G.sel = -1; G.focus = 0; render(); return; }
   G.sel = i;
+  if (G.board[i]) G.focus = G.board[i];
   render();
 }
 
@@ -993,7 +1046,13 @@ function input(d) {
   if (!playing()) return;
   if (hintView && !G.training) { hintView = null; render(); }
   const i = G.sel;
-  if (i < 0) { toast('Select a square first'); return; }
+  if (i < 0) {
+    // With no square selected, a number on the pad switches the number helper to it (tap again to clear).
+    if (settings.numberHelper === 'off') { toast('Select a square first'); return; }
+    G.focus = G.focus === d ? 0 : d;
+    render();
+    return;
+  }
   if (isLocked(i)) return;
   if (G.notesMode) {
     if (G.board[i]) return;
@@ -1005,6 +1064,7 @@ function input(d) {
   pushHistory(i);
   G.board[i] = d;
   G.notes[i] = 0;
+  G.focus = d;
   popCell = i;
   if (d === G.solution[i]) {
     if (!G.scored[i]) {
@@ -1122,10 +1182,109 @@ const LESSONS = {
 };
 const lessonFor = techId => Object.keys(LESSONS).find(k => LESSONS[k].techs.includes(techId));
 
+// One picture per lesson: a whole board, a strip of rows, a single row or a single box, whichever shows the idea best.
+// h/w: rows and columns shown (from r0/c0). cells: 'rc' → {v: given, a: answer, n: pencilmarks, x: pencilmarks crossed off,
+// bg: 'area' | 'out' | 'target' | 'elim', ring: pattern square coloured 'a' (blue) | 'b' (amber)}. peers: shade a square's row, column and box.
+// lines: rows/columns ruled out, lightly shaded ('r0', 'c4'). box: a box (0–8) to outline.
+// links: [r1, c1, r2, c2] lines joining squares. cap: what the picture shows.
+const LESSON_FIGS = {
+  fullHouse: {h: 3, w: 3, cells: {'00': {v: 5}, '01': {v: 3}, '02': {bg: 'target', a: 2}, '10': {v: 6}, '11': {v: 1}, '12': {v: 9},
+    '20': {v: 8}, '21': {v: 4}, '22': {v: 7}},
+    cap: 'This box has eight numbers. The only one missing is 2, so the empty square must be 2.'},
+  hiddenSingle: {h: 9, w: 9, cells: {'05': {v: 6}, '17': {v: 6}, '41': {v: 6}, '70': {v: 6}, '20': {v: 3}, '11': {v: 8},
+    '00': {bg: 'out'}, '01': {bg: 'out'}, '02': {bg: 'out'}, '10': {bg: 'out'}, '12': {bg: 'out'}, '21': {bg: 'out'}, '22': {bg: 'target', a: 6}},
+    lines: ['r0', 'r1', 'c0', 'c1'], box: 0,
+    cap: 'Each 6 rules out the row or column it sits in (shaded). In the top-left box only one square is left, so the 6 goes there.'},
+  nakedSingle: {h: 9, w: 9, peers: '44', cells: {'40': {v: 1}, '47': {v: 3}, '48': {v: 8}, '04': {v: 2}, '14': {v: 5}, '74': {v: 9},
+    '33': {v: 4}, '55': {v: 7}, '44': {bg: 'target', a: 6}},
+    cap: 'The square\'s row, column and box (shaded) already hold 1, 2, 3, 4, 5, 7, 8 and 9. Only 6 is left.'},
+  pointing: {h: 3, w: 9, cells: {'00': {v: 5}, '01': {n: '17'}, '02': {v: 9}, '10': {n: '47', ring: 'a'}, '11': {v: 2}, '12': {n: '48', ring: 'a'},
+    '20': {n: '37'}, '21': {v: 6}, '22': {n: '138'}, '13': {v: 3}, '14': {n: '48', x: '4', bg: 'elim'}, '15': {v: 1}, '16': {n: '69'},
+    '17': {n: '46', x: '4', bg: 'elim'}, '18': {v: 5}}, box: 0,
+    cap: 'In the left box, 4 can only go in the middle row (blue). That row\'s 4 is used up, so cross 4 off the rest of the row.'},
+  claiming: {h: 3, w: 9, cells: {'00': {v: 1}, '01': {n: '25'}, '02': {v: 4}, '03': {n: '235'}, '04': {v: 9}, '05': {v: 8},
+    '06': {n: '57', ring: 'a'}, '07': {v: 6}, '08': {n: '37', ring: 'a'}, '16': {n: '578', x: '7', bg: 'elim'}, '17': {v: 4}, '18': {v: 1},
+    '26': {v: 2}, '27': {n: '378', x: '7', bg: 'elim'}, '28': {v: 9}}, box: 2,
+    cap: 'The top row\'s 7 must be in the right-hand box (blue). So the box\'s 7 is used up — cross 7 off its other squares.'},
+  nakedSubset: {h: 1, w: 9, cells: {'00': {n: '27', ring: 'a'}, '01': {v: 5}, '02': {n: '279', x: '27', bg: 'elim'}, '03': {v: 1},
+    '04': {n: '27', ring: 'a'}, '05': {n: '3789', x: '7', bg: 'elim'}, '06': {v: 4}, '07': {n: '236', x: '2', bg: 'elim'}, '08': {n: '3689'}},
+    cap: 'Two squares can only be 2 or 7 (blue). Between them they take the 2 and the 7, so cross those off the rest of the row.'},
+  hiddenSubset: {h: 3, w: 3, cells: {'00': {v: 2}, '01': {n: '1389', x: '19', ring: 'a'}, '02': {n: '149'}, '10': {n: '46'}, '11': {v: 5},
+    '12': {n: '3468', x: '46', ring: 'a'}, '20': {n: '169'}, '21': {n: '469'}, '22': {v: 7}},
+    cap: '3 and 8 each fit only in the two blue squares, so those squares must be 3 and 8. Their other pencilmarks can go.'},
+  fish: {h: 9, w: 9, cells: {'12': {n: '5', ring: 'a'}, '16': {n: '5', ring: 'a'}, '62': {n: '5', ring: 'a'}, '66': {n: '5', ring: 'a'},
+    '32': {n: '5', x: '5', bg: 'elim'}, '82': {n: '5', x: '5', bg: 'elim'}, '06': {n: '5', x: '5', bg: 'elim'}, '46': {n: '5', x: '5', bg: 'elim'}},
+    links: [[1, 2, 1, 6], [6, 2, 6, 6], [1, 2, 6, 2], [1, 6, 6, 6]],
+    cap: 'X-Wing: in two rows, 5 fits only in the same two columns (blue). Those rows use up both columns\' 5s, so cross 5 off the rest of both columns.'},
+  skyscraper: {h: 9, w: 9, cells: {'01': {n: '3', ring: 'a'}, '41': {n: '3', ring: 'a'}, '04': {n: '3', ring: 'b'}, '45': {n: '3', ring: 'b'},
+    '15': {n: '3', x: '3', bg: 'elim'}, '25': {n: '3', x: '3', bg: 'elim'}, '34': {n: '3', x: '3', bg: 'elim'}, '54': {n: '3', x: '3', bg: 'elim'}},
+    links: [[0, 1, 0, 4], [4, 1, 4, 5], [0, 1, 4, 1]],
+    cap: 'Two rows each have 3 in only two places. The blue ends share a column, so at most one is 3 — so one amber end must be. Squares that see both amber ends lose 3.'},
+  twoStringKite: {h: 9, w: 9, cells: {'01': {n: '8', ring: 'a'}, '20': {n: '8', ring: 'a'}, '06': {n: '8', ring: 'b'}, '70': {n: '8', ring: 'b'},
+    '76': {n: '8', x: '8', bg: 'elim'}},
+    links: [[0, 1, 0, 6], [2, 0, 7, 0]], lines: ['c6', 'r7'],
+    cap: 'The row and the column each have 8 in two places. The blue ends share a box, so one amber end must be 8. Where the amber row and column cross, 8 can go.'},
+  xyWing: {h: 9, w: 9, cells: {'11': {n: '27', ring: 'a'}, '16': {n: '29', ring: 'b'}, '61': {n: '79', ring: 'b'}, '66': {n: '39', x: '9', bg: 'elim'}},
+    links: [[1, 1, 1, 6], [1, 1, 6, 1]],
+    cap: 'Whether the blue pivot is 2 or 7, one of the amber pincers becomes 9. The square that sees both pincers can\'t be 9.'},
+  xyzWing: {h: 9, w: 9, cells: {'11': {n: '279', ring: 'a'}, '00': {n: '29', ring: 'b'}, '16': {n: '79', ring: 'b'},
+    '10': {n: '39', x: '9', bg: 'elim'}, '12': {n: '49', x: '9', bg: 'elim'}},
+    links: [[1, 1, 0, 0], [1, 1, 1, 6]],
+    cap: '9 must be in one of the three coloured squares. Only squares that see all three — here, beside the pivot — lose 9.'},
+  simpleColouring: {h: 9, w: 9, cells: {'01': {n: '4', ring: 'a'}, '06': {n: '4', ring: 'b'}, '46': {n: '4', ring: 'a'}, '42': {n: '4', ring: 'b'},
+    '31': {n: '4', x: '4', bg: 'elim'}, '51': {n: '4', x: '4', bg: 'elim'}},
+    links: [[0, 1, 0, 6], [0, 6, 4, 6], [4, 6, 4, 2]],
+    cap: 'Each link has 4 at one end only, so the colours alternate: all blue squares are 4, or all amber ones are. A square that sees one of each can\'t be 4.'},
+  xyChain: {h: 9, w: 9, cells: {'00': {n: '12', ring: 'a'}, '05': {n: '23', ring: 'b'}, '45': {n: '34', ring: 'b'}, '48': {n: '14', ring: 'a'},
+    '08': {n: '16', x: '1', bg: 'elim'}, '40': {n: '15', x: '1', bg: 'elim'}},
+    links: [[0, 0, 0, 5], [0, 5, 4, 5], [4, 5, 4, 8]],
+    cap: 'If the first blue end isn\'t 1, it is 2, which makes the next square 3, the next 4 and the last end 1. So one end is 1, and squares that see both ends can\'t be.'},
+};
+
+function lessonFig(f) {
+  if (!f) return '';
+  const S = 36, W = f.w * S, H = f.h * S, r0 = f.r0 || 0, c0 = f.c0 || 0;
+  const fills = {area: 'var(--rel)', out: 'var(--wrongbg)', elim: 'var(--wrongbg)', target: 'var(--sel)'};
+  const rings = {a: 'var(--same)', b: 'rgba(232,163,23,.35)'};
+  const mid = (r, c) => [(c - c0 + .5) * S, (r - r0 + .5) * S];
+  const peer = f.peers && [+f.peers[0], +f.peers[1]];
+  const sees = (r, c) => peer && (r === peer[0] || c === peer[1] || (Math.floor(r / 3) === Math.floor(peer[0] / 3) && Math.floor(c / 3) === Math.floor(peer[1] / 3)));
+  let back = '', front = '';
+  for (let r = r0; r < r0 + f.h; r++) for (let c = c0; c < c0 + f.w; c++) {
+    const k = f.cells[`${r}${c}`] || {}, x = (c - c0) * S, y = (r - r0) * S;
+    const tint = (Math.floor(r / 3) + Math.floor(c / 3)) % 2 ? 'var(--tint)' : 'var(--card)';
+    back += `<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${fills[k.bg] || rings[k.ring] || (sees(r, c) ? fills.area : tint)}" stroke="var(--line)"/>`;
+    if (!k.bg && !k.ring && (f.lines || []).some(l => l === `r${r}` || l === `c${c}`))
+      back += `<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="var(--wrongbg)" opacity=".55"/>`;
+    if (k.v || k.a) front += `<text x="${x + S / 2}" y="${y + S * .7}" text-anchor="middle" font-size="${S * .6}" ` +
+      `font-weight="${k.a ? 800 : 500}" fill="${k.a ? 'var(--accent)' : 'var(--given)'}">${k.v || k.a}</text>`;
+    // Pencilmarks sit in their usual spots when there are many; up to three are written larger across the middle
+    // so they can be read on a phone (one on its own larger still).
+    const m = (k.n || '').length, few = m <= 3, fs = S * (m === 1 ? .5 : few ? .36 : .33);
+    for (const [j, d] of [...(k.n || '')].entries()) {
+      const nx = few ? x + S / 2 + (j - (m - 1) / 2) * S * .29 : x + S * (.2 + .3 * ((d - 1) % 3));
+      const ny = few ? y + S * (m === 1 ? .68 : .62) : y + S * (.31 + .3 * Math.floor((d - 1) / 3));
+      const crossed = (k.x || '').includes(d), lone = m === 1;
+      front += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="${fs}" font-weight="${crossed ? 800 : 700}" ` +
+        `fill="${crossed ? 'var(--wrong)' : k.ring ? 'var(--text)' : 'var(--muted)'}">${d}</text>`;
+      if (crossed) front += `<path d="M${nx - fs * .5} ${ny + fs * .05}l${fs} ${-fs * .8}" stroke="var(--wrong)" stroke-width="${lone ? 2.2 : 1.6}" stroke-linecap="round"/>`;
+    }
+    if (k.bg === 'out') front += `<path d="M${x + S * .38} ${y + S * .38}l${S * .24} ${S * .24}m0 ${-S * .24}l${-S * .24} ${S * .24}" ` +
+      'stroke="var(--wrong)" stroke-width="2" stroke-linecap="round" opacity=".7"/>';
+  }
+  const links = (f.links || []).map(([r1, c1, r2, c2]) => {
+    const [x1, y1] = mid(r1, c1), [x2, y2] = mid(r2, c2);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>`;
+  }).join('') + (f.box === undefined ? '' : `<rect x="${(f.box % 3 * 3 - c0) * S + 1.5}" y="${(Math.floor(f.box / 3) * 3 - r0) * S + 1.5}" ` +
+    `width="${3 * S - 3}" height="${3 * S - 3}" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>`);
+  return `<figure class="lfig"><svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="${f.cap.replace(/"/g, '')}">
+    ${back}${links}${front}</svg><figcaption>${f.cap}</figcaption></figure>`;
+}
+
 function showLesson(key, back) {
   const L = LESSONS[key], lv = E.TECH[L.techs[0]].level;
   showModal(`<h2>${L.title}</h2><p><span class="chip lesson-chip">${levelLabel(lv)}</span></p>
-    <div class="lesson"><h3>What it is</h3><p>${L.what}</p><h3>How to spot it</h3><p>${L.spot}</p><h3>Why it works</h3><p>${L.why}</p></div>`,
+    <div class="lesson"><h3>What it is</h3><p>${L.what}</p>${lessonFig(LESSON_FIGS[key])}<h3>How to spot it</h3><p>${L.spot}</p><h3>Why it works</h3><p>${L.why}</p></div>`,
     back ? [{label: 'All techniques', cls: '', onClick: showLearn}, {label: 'Got it', cls: 'primary'}] : [{label: 'Got it', cls: 'primary'}]);
 }
 
@@ -1146,7 +1305,7 @@ function showLearn() {
 // A hint teaches rather than reveals: first a nudge (the technique and where to look), then the pattern
 // explained on the board, then — only if asked — the move is made. Wrong numbers and broken notes come first,
 // because every later step would build on them.
-const levelLabel = lv => Object.values(DIFFS).find(d => d.level === lv && !d.minClues).label;
+const levelLabel = lv => Object.entries(DIFFS).find(([k, d]) => d.level === lv && k !== 'beginner')[1].label;
 
 // What a careful solver knows from here: the correct numbers placed plus eliminations from earlier hints.
 function hintState() {
@@ -1485,6 +1644,8 @@ document.addEventListener('keydown', e => {
 applyTheme();
 if (history.state && history.state.s) history.replaceState(null, '');
 setScreen('home');
+$('splash').classList.add('gone');
+setTimeout(() => $('splash').remove(), 400);
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }

@@ -545,40 +545,88 @@ function grade(puzzle, maxLevel = 5) {
 const toStr = g => g.join('');
 const fromStr = s => [...s].map(Number);
 
-// Removes clues (in 180°-symmetric pairs if asked) while the puzzle stays unique and, if
-// maxLevel is set, still solvable using techniques up to that level.
-function dig(solution, {symmetric = true, maxLevel = 0, minClues = 17} = {}) {
-  const p = solution.slice();
+// The gentler levels are built to a recipe so a new player never gets stuck:
+//   techs   the only techniques the puzzle may need (Beginner leaves out row/column hidden singles)
+//   clues   how many clues to keep        minBox  the fewest clues in any box, so every box offers a start
+//   minOpts the fewest squares that must be fillable (with those techniques) at every point of the solve
+// flowing/tight: the clues and minOpts used for those pace settings.
+// Medium must still need a naked single somewhere, which gets rare as the solve gets roomier, so its
+// settings are tighter (even so, only about 1 dig in 15 qualifies; that's still under a fifth of a second).
+const RECIPES = {
+  beginner: {level: 1, techs: ['fullHouse', 'hiddenSingleBox'], clues: 45, minBox: 4, minOpts: 4,
+    flowing: {clues: 48, minOpts: 6}, tight: {clues: 42, minOpts: 3}},
+  easy:     {level: 1, techs: ['fullHouse', 'hiddenSingleBox', 'hiddenSingleLine'], clues: 36, minBox: 3, minOpts: 3,
+    flowing: {clues: 39, minOpts: 5}, tight: {clues: 33, minOpts: 2}},
+  medium:   {level: 2, techs: ['fullHouse', 'hiddenSingleBox', 'hiddenSingleLine', 'nakedSingle'], clues: 28, minBox: 2, minOpts: 2,
+    flowing: {clues: 29, minOpts: 3}, tight: {clues: 26, minOpts: 1}},
+};
+const recipeFor = (name, pace) => ({...RECIPES[name], ...RECIPES[name][pace]});
+
+// How many squares could be filled right now using only the given techniques.
+function countMoves(s, techs) {
+  const found = new Set(), box = techs.includes('hiddenSingleBox'), line = techs.includes('hiddenSingleLine');
+  for (let u = 0; u < 27; u++) {
+    const empty = UNITS[u].filter(i => !s.g[i]);
+    if (empty.length === 1) { found.add(empty[0]); continue; }
+    if (!(u >= 18 ? box : line)) continue;
+    const placed = placedIn(s, u);
+    for (let d = 1; d <= 9; d++) {
+      if (placed & (1 << d)) continue;
+      const pos = empty.filter(i => s.c[i] & (1 << d));
+      if (pos.length === 1) found.add(pos[0]);
+    }
+  }
+  if (techs.includes('nakedSingle')) for (let i = 0; i < 81; i++) if (!s.g[i] && popcount(s.c[i]) === 1) found.add(i);
+  return found.size;
+}
+
+// Solves with the recipe's techniques only. Returns the fewest moves on offer at any point before the
+// last few squares (which always narrow down), or -1 if the puzzle can't be solved that way.
+function flow(puzzle, techs) {
+  const s = makeState(puzzle);
+  let empty = s.g.filter(v => !v).length, least = 81;
+  while (empty > 0) {
+    if (empty > 8) least = Math.min(least, countMoves(s, techs));
+    let st = null;
+    for (const t of techs) if ((st = TECH[t].fn(s))) break;
+    if (!st) return -1;
+    applyStep(s, st);
+    empty -= st.place.length;
+  }
+  return least;
+}
+
+// Removes clues (in 180°-symmetric pairs if asked) while the puzzle stays unique and, with a recipe,
+// keeps every box above its minimum and the solve flowing.
+function dig(solution, {symmetric = true, recipe = null} = {}) {
+  const p = solution.slice(), minClues = recipe ? recipe.clues : 17;
   let clues = 81;
   for (const i of shuffle([...Array(symmetric ? 41 : 81).keys()])) {
     const j = 80 - i, pair = symmetric && j !== i, need = pair ? 2 : 1;
     if (clues - need < minClues) continue;
     const a = p[i], b = p[j];
     p[i] = 0; if (pair) p[j] = 0;
-    let ok = solveCount(p, 2, false).count === 1;
-    if (ok && maxLevel) ok = grade(p, maxLevel).solved;
+    let ok = !recipe || [BO[i], BO[j]].every(bx => UNITS[18 + bx].filter(k => p[k]).length >= recipe.minBox);
+    if (ok) ok = solveCount(p, 2, false).count === 1;
+    if (ok && recipe) ok = flow(p, recipe.techs) >= recipe.minOpts;
     if (ok) clues -= need; else { p[i] = a; if (pair) p[j] = b; }
   }
   return p;
 }
 
-// Minimum clue counts for the gentler levels by pace preference (more clues = more to find at once).
-const MIN_CLUES = {1: {flowing: 36, any: 32, tight: 28}, 2: {flowing: 30, any: 27, tight: 24}};
-
 function generateOnce(level, prefs = {}) {
   const symmetric = prefs.symmetric !== false;
   const solution = solveCount(Array(81).fill(0), 1, true).solution;
-  // Easy/Medium dig only while the puzzle stays that easy; harder levels dig to a minimal puzzle and
-  // are kept only if the grade matches (about 1 in 10 random minimal puzzles needs Master techniques).
-  const puzzle = level <= 2
-    ? dig(solution, {symmetric, maxLevel: level, minClues: prefs.minClues || MIN_CLUES[level][prefs.pace || 'any']})
-    : dig(solution, {symmetric});
+  // Beginner/Easy/Medium dig to their recipe; harder levels dig to a minimal puzzle and are kept
+  // only if the grade matches (about 1 in 10 random minimal puzzles needs Master techniques).
+  const recipe = level <= 2 ? recipeFor(prefs.recipe || (level === 1 ? 'easy' : 'medium'), prefs.pace) : null;
+  const puzzle = dig(solution, {symmetric, recipe});
   const meta = grade(puzzle, 5);
   return {puzzle: toStr(puzzle), solution: toStr(solution), meta};
 }
 
 // Pace thresholds (average singles available) per level, from sampling generated puzzles.
-// Lower and upper thirds of the measured spread; Easy/Medium pace is set by clue count instead.
+// Lower and upper thirds of the measured spread; Beginner/Easy/Medium pace is set by the recipe instead.
 const PACE = {1: [8.3, 11], 2: [5.2, 6.0], 3: [4.7, 5.35], 4: [5.1, 5.9], 5: [5.0, 5.8]};
 
 function matchesPrefs(meta, level, prefs = {}) {
@@ -625,7 +673,7 @@ function transform(puzzle, solution, keepSymmetry = true) {
 const Engine = {
   RO, CO, BO, UNITS, PEERS, sees, popcount, digitsOf, shuffle, solveCount, makeState, applyStep, findStep,
   grade, dig, generateOnce, matchesPrefs, transform, toStr, fromStr, cellName, unitName,
-  TECHNIQUES, TECH, FAMILIES, PACE,
+  TECHNIQUES, TECH, FAMILIES, PACE, RECIPES, flow,
 };
 
 // ---------- worker mode ----------

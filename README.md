@@ -12,20 +12,24 @@ On Android, open the link in Chrome and choose **⋮ → Add to Home screen** (o
 
 | Level | Techniques needed |
 |---|---|
-| Beginner | Hidden singles, with lots of numbers filled in to start |
-| Easy | Full house, hidden singles |
-| Medium | Naked singles |
+| Beginner | Full house and hidden singles in boxes; about 45 numbers to start |
+| Easy | Adds hidden singles in rows and columns; about 36 numbers to start |
+| Medium | Adds naked singles; about 28 numbers to start |
 | Hard | Pointing, box/line reduction, naked and hidden pairs and triples |
 | Expert | X-Wing, Skyscraper, Two-String Kite, XY-Wing, Swordfish, quads |
 | Master | XYZ-Wing, Jellyfish, Simple Colouring, XY-Chains |
 
 Every puzzle has exactly one solution and can be solved by logic alone, with no guessing.
 
+**The gentler levels never leave you stuck.** Beginner, Easy and Medium are built so that at every point of the solve there are several squares you could fill next (at least 4 on Beginner, 3 on Easy, 2 on Medium), and every box starts with a few numbers. A Beginner game is about a 5–10 minute play.
+
 **Ideas teach rather than reveal.** Tapping **Idea** first names the technique and where to look. **Show me** highlights the pattern on the board and explains why it works. You fill in the move yourself, or let the game do it. Before anything else, an Idea points out a wrong number or a broken pencilmark.
 
 **Training mode** puts a coach beside the board. It shows the next step, explains it in plain English and links to a short lesson on each technique. Training games aren't scored.
 
-**Learn techniques** on the home screen has a lesson for every technique: what it is, how to spot it and why it works.
+**Learn techniques** on the home screen has a lesson for every technique: what it is, a picture of it on the board, how to spot it and why it works.
+
+**Number helper.** Tap a number on the board (or on the number pad with no square selected) and the board shows where it can go, on every level. Choose in Settings: **Shade** greys out every square the number can't go in, so the open squares stand out; **Lines** only tints the rows and columns its copies cover, so you still do the last step yourself; or **Off**.
 
 ## Features
 
