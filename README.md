@@ -14,6 +14,7 @@ On Android, open the link in Chrome and choose **⋮ → Add to Home screen** (o
 |---|---|
 | Beginner | Full house and hidden singles in boxes; about 45 numbers to start |
 | Easy | Adds hidden singles in rows and columns; about 36 numbers to start |
+| Semi-Easy | Like Medium (needs a naked single), with about 32 numbers to start |
 | Medium | Adds naked singles; about 28 numbers to start |
 | Hard | Pointing, box/line reduction, naked and hidden pairs and triples |
 | Expert | X-Wing, Skyscraper, Two-String Kite, XY-Wing, Swordfish, quads |
@@ -23,20 +24,22 @@ Every puzzle has exactly one solution and can be solved by logic alone, with no 
 
 **The gentler levels never leave you stuck.** Beginner, Easy and Medium are built so that at every point of the solve there are several squares you could fill next (at least 4 on Beginner, 3 on Easy, 2 on Medium), and every box starts with a few numbers. A Beginner game is about a 5–10 minute play.
 
-**Ideas teach rather than reveal.** Tapping **Idea** first names the technique and where to look. **Show me** highlights the pattern on the board and explains why it works. You fill in the move yourself, or let the game do it. Before anything else, an Idea points out a wrong number or a broken pencilmark.
+**A scanning routine instead of jumping around.** The game teaches one fixed way to look at the board: pick a number, go band by band (three boxes at a time), scan across the rows and then down the columns. Only when that finds nothing does it move on to nearly-full lines, squares where only one number fits, and finally pencilmarks. Ideas and the Training coach both follow this order.
 
-**Training mode** puts a coach beside the board. It shows the next step, explains it in plain English and links to a short lesson on each technique. Training games aren't scored.
+**Ideas teach rather than reveal.** Tapping **Idea** first names the technique and where to look. **Show me** explains it on the board (a scanning step is animated) and you fill in the move yourself, or let the game do it. Ideas never fill the board with every possible pencilmark: they add only the number a step is about, and on harder steps **Pencil in the 5s** marks just where that one number can go. Before anything else, an Idea points out a wrong number or a broken pencilmark.
 
-**Learn techniques** on the home screen has a lesson for every technique: what it is, a picture of it on the board, how to spot it and why it works.
+**Training mode** puts a coach beside the board. It works through the scanning routine with an animation: the number's copies light up, lines sweep across rows and down columns, ruled-out squares are crossed off and the one square left pulses. A strip shows which number and band the coach is on. Training games aren't scored.
+
+**Learn techniques** on the home screen starts with **How to scan the board** (two animated pictures and the routine), then has a lesson for every technique: what it is, a picture of it on the board, how to spot it and why it works.
 
 **Number helper.** Tap a number on the board (or on the number pad with no square selected) and the board shows where it can go, on every level. Choose in Settings: **Shade** greys out every square the number can't go in, so the open squares stand out; **Lines** only tints the rows and columns its copies cover, so you still do the last step yourself; or **Off**.
 
 ## Features
 
-- Six levels, from Beginner to Master, with a fresh puzzle every game
+- Seven levels, from Beginner to Master, with a fresh puzzle every game
 - Pencilmarks, undo, clear, and ideas (1, 3, 5, 10 or unlimited per game)
 - A mistake limit you choose (1 to 10, or none), with a second chance
-- Scoring with bonuses for finished rows, columns and boxes, plus a time bonus for beating the target time
+- Scoring with bonuses for finished rows, columns and boxes, plus a time bonus for beating the target time; your best single game is shown as **Best**
 - Small celebrations when you complete a row, column, box or number
 - Puzzle style preferences: favourite techniques, pace (flowing or tight) and symmetric layouts
 - Statistics for each level: win rate, best and average time, best score and streaks
@@ -70,3 +73,4 @@ The grading approach and technique definitions draw on:
 - [SudokuWiki — Grading Puzzles](https://www.sudokuwiki.org/Grading_Puzzles)
 - [Kristanix — Sudoku Solving Techniques](https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php)
 - [HoDoKu technique guides](https://hodoku.sourceforge.net/en/techniques.php)
+- [Conceptis Puzzles — Sudoku techniques](https://www.conceptispuzzles.com/index.aspx?uri=puzzle/sudoku/techniques) (the scanning routine)

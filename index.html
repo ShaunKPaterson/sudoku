@@ -74,7 +74,9 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .ring text{font-size:11.5px;font-weight:800;fill:var(--text);font-family:var(--font)}
 .stats{flex:1;display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px}
 .stats>div{display:flex;flex-direction:column;gap:3px;min-width:0}
-.stats span{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+.stats span{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stats>div:last-child{align-items:flex-end}
+.mbar em{font-style:normal;font-size:11px;font-weight:700;color:var(--muted);line-height:8px}
 .stats b{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--text)}
 .stats span b{font-size:12px}
 .mbar{display:flex;gap:3px;padding-top:3px}
@@ -115,6 +117,31 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .cell.h-focus{box-shadow:inset 0 0 0 3px var(--accent)}
 .cell.h-focusB{box-shadow:inset 0 0 0 3px #e8a317}
 .notes span.x{color:var(--wrong);text-decoration:line-through;font-weight:700}
+/* scanning animation, drawn over the board (and in the lesson pictures) in 90-unit board coordinates:
+   copies of the number light up, the rest of the board dims, lines sweep along rows then columns,
+   ruled-out squares are crossed and the one square left pulses. --dl staggers each piece. */
+.scanlayer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.scan .f{opacity:0;animation:sfade .35s ease-out var(--dl,0s) forwards}
+.scan .sx,.scan .sy{transform-box:view-box;animation:sgrow .55s ease-out var(--dl,0s) both}
+.scan .sx{--g:scaleX(0)}
+.scan .sy{--g:scaleY(0)}
+.scan .pulse{opacity:0;animation:spulse .9s ease-in-out var(--dl,0s) 3 forwards}
+@keyframes sfade{to{opacity:1}}
+@keyframes sgrow{from{transform:var(--g)}to{transform:none}}
+@keyframes spulse{0%{opacity:.3;stroke-width:1.2}50%{opacity:1;stroke-width:2.6}100%{opacity:1;stroke-width:1.8}}
+@media (prefers-reduced-motion:reduce){.scan *{animation-duration:.01s!important;animation-delay:0s!important}}
+/* the routine strip in the coach: numbers in scanning order, then where the coach is looking */
+.scanstrip{display:flex;align-items:center;gap:3px;flex:none}
+.scanstrip i{font-style:normal;flex:1;max-width:24px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:12.5px;font-weight:800;
+  background:var(--tint);color:var(--text)}
+.scanstrip i.on{background:var(--accent);color:#fff}
+.scanstrip i.done{color:var(--muted);text-decoration:line-through;opacity:.7}
+.scanstrip span{margin-left:auto;padding-left:6px;font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap}
+.lfig .replay{margin:6px auto 0;display:flex;align-items:center;gap:6px;border:0;background:var(--rel);color:var(--accent);
+  border-radius:16px;padding:6px 14px;font-size:14px;font-weight:700;cursor:pointer}
+.lfig .replay svg{width:16px;height:16px;box-shadow:none;border-radius:0}
+.routine{margin:6px 0 0;padding-left:22px;text-align:left}
+.routine li{margin:6px 0;line-height:1.4}
 .controls{position:relative;display:flex;flex-direction:column}
 #game{overflow-y:auto}
 #game>*{flex-shrink:0}
@@ -127,7 +154,8 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .hintpanel.coach{position:static;order:-1;margin:0 16px;height:var(--coachH);box-shadow:var(--soft-shadow);border:0;border-radius:20px;gap:6px;padding:10px 14px 10px}
 .hintpanel.coach h4{font-size:16px}
 .hintpanel.coach p{font-size:14px;line-height:1.4}
-.hintpanel.coach .hbtns .btn{padding:9px;font-size:15px}
+.hintpanel.coach .hbtns .btn{padding:9px 6px;font-size:15px;white-space:nowrap}
+@media (max-width:380px){.hintpanel.coach .hbtns .btn{font-size:14px}}
 .hintpanel.coach .hbtns .iconbtn{flex:none;width:42px;height:42px;background:var(--soft)}
 .hintpanel.coach .hbtns .iconbtn svg{width:22px;height:22px}
 .hintpanel.coach .hbtns .iconbtn.on{background:var(--accent);color:#fff}
@@ -220,7 +248,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 /* ---------- stats ---------- */
 .subbar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;padding:10px}
 .subbar h2{margin:0;text-align:center;font-size:20px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin:6px 14px 16px;background:var(--rel);border-radius:12px;padding:4px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin:6px 14px 16px;background:var(--rel);border-radius:12px;padding:4px}
 .tabs button{border:0;background:none;padding:9px 0;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
 .tabs button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px;overflow:auto}
@@ -331,7 +359,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
       </g>
     </svg>
     <h1>Sudoku</h1>
-    <div class="alltime">Top score <b id="homeTop">0</b></div>
+    <div class="alltime">Best score <b id="homeTop">0</b></div>
     <div class="home-actions">
       <button class="btn primary" id="btnContinue" data-act="continue">Continue<small id="continueInfo"></small></button>
       <button class="btn" id="btnNew" data-act="newgame">New Game</button>
@@ -360,7 +388,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
       <div class="stats">
         <div><span>Score</span><b id="score">0</b></div>
         <div><span>Mistakes <b id="mistakes">0/3</b></span><span class="mbar" id="mistakeBar" role="img"></span></div>
-        <div><span>All time</span><b id="allTime">0</b></div>
+        <div><span>Best</span><b id="allTime">0</b></div>
       </div>
     </div>
     <div class="boardwrap">
@@ -413,13 +441,15 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 // Levels are defined by the hardest solving technique a puzzle needs (see engine.js), not by clue count.
 // pts: per correct number and per completed row/column/box. par: target time in seconds for the time bonus.
 // Beginner, Easy and Medium are also built to a recipe in engine.js (RECIPES) so there is always plenty to find.
+// Semi-Easy uses Medium's techniques with more numbers to start, and may not need a naked single at all.
 const DIFFS = {
-  beginner: {label: 'Beginner', level: 1, pts: 10,  par: 8 * 60,   desc: 'A quick, gentle game — hidden singles in boxes'},
-  easy:     {label: 'Easy',     level: 1, pts: 20,  par: 15 * 60,  desc: 'Hidden singles in boxes, rows and columns'},
-  medium:   {label: 'Medium',   level: 2, pts: 40,  par: 25 * 60,  desc: 'Adds naked singles'},
-  hard:     {label: 'Hard',     level: 3, pts: 60,  par: 75 * 60,  desc: 'Pointing, box/line, pairs & triples'},
-  expert:   {label: 'Expert',   level: 4, pts: 90,  par: 100 * 60, desc: 'X-Wing, Skyscraper, Kite, XY-Wing, Swordfish'},
-  master:   {label: 'Master',   level: 5, pts: 130, par: 150 * 60, desc: 'XYZ-Wing, Jellyfish, Colouring, XY-Chains'},
+  beginner: {label: 'Beginner',  level: 1, pts: 100,  par: 8 * 60,   desc: 'A quick, gentle game — hidden singles in boxes'},
+  easy:     {label: 'Easy',      level: 1, pts: 200,  par: 15 * 60,  desc: 'Hidden singles in boxes, rows and columns'},
+  semiEasy: {label: 'Semi-Easy', level: 2, pts: 300,  par: 18 * 60,  desc: 'Like Medium, with more numbers to start'},
+  medium:   {label: 'Medium',    level: 2, pts: 400,  par: 25 * 60,  desc: 'Adds naked singles'},
+  hard:     {label: 'Hard',      level: 3, pts: 600,  par: 75 * 60,  desc: 'Pointing, box/line, pairs & triples'},
+  expert:   {label: 'Expert',    level: 4, pts: 900,  par: 100 * 60, desc: 'X-Wing, Skyscraper, Kite, XY-Wing, Swordfish'},
+  master:   {label: 'Master',    level: 5, pts: 1300, par: 150 * 60, desc: 'XYZ-Wing, Jellyfish, Colouring, XY-Chains'},
 };
 const MISTAKE_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0]; // 0 = no limit
 const HINT_STEPS = [1, 3, 5, 10, 0];                     // 0 = unlimited
@@ -515,7 +545,7 @@ const store = {
   set(k, v) { try { localStorage.setItem('sudoku.' + k, JSON.stringify(v)); } catch (e) {} },
 };
 function freshStats() {
-  const s = {allTime: 0, byDiff: {}};
+  const s = {scoreScale: 10, byDiff: {}};
   for (const k in DIFFS) s.byDiff[k] = {started: 0, won: 0, totalTime: 0, best: null, streak: 0, bestStreak: 0};
   return s;
 }
@@ -528,11 +558,17 @@ if (typeof settings.mistakeLimit === 'boolean') { settings.maxMistakes = setting
 // The "Soft" redesign brings its rounded font; switch existing players over once (they can change it back).
 if (settings.design !== 'soft') { settings.design = 'soft'; settings.font = 'rounded'; }
 const stats = freshStats();
-(function loadStats(saved) {
-  stats.allTime = saved.allTime || 0;
-  for (const k in stats.byDiff) Object.assign(stats.byDiff[k], (saved.byDiff || {})[k]);
-})(store.get('stats', {}));
 let G = store.get('game', null);
+(function loadStats(saved) {
+  for (const k in stats.byDiff) Object.assign(stats.byDiff[k], (saved.byDiff || {})[k]);
+  // Points went up tenfold (Oct 2026): scale up scores saved before that, and a game in progress, once.
+  if (saved.byDiff && !saved.scoreScale) {
+    for (const s of Object.values(stats.byDiff)) if (s.bestScore != null) s.bestScore *= 10;
+    if (G) for (const k of ['score', 'cellPts', 'unitPts', 'timeBonus']) if (G[k]) G[k] *= 10;
+    store.set('stats', stats);
+    store.set('game', G);
+  }
+})(store.get('stats', {}));
 if (G && !G.unitsDone) Object.assign(G, {unitsDone: Array(27).fill(0), cellPts: G.score, unitPts: 0});
 if (G && !G.elims) G.elims = [];
 let paused = false, screen = 'home', statsTab = 'medium';
@@ -551,6 +587,8 @@ function fmtTime(s) {
   return h ? `${h}:${p(m)}:${p(sec)}` : `${p(m)}:${p(sec)}`;
 }
 const fmtNum = n => n.toLocaleString('en-GB');
+// The best single game on any level (shown as "Best" in the game and on the home screen).
+const bestEver = () => Math.max(0, ...Object.values(stats.byDiff).map(s => s.bestScore || 0));
 function toast(msg) {
   const t = $('toast');
   t.textContent = msg; t.classList.add('show');
@@ -654,6 +692,7 @@ const cells = [];
     board.appendChild(el);
     cells.push({el, v: el.firstChild, notes: [...el.lastChild.children]});
   }
+  board.insertAdjacentHTML('beforeend', '<svg class="scanlayer scan" id="scanLayer" viewBox="0 0 90 90" preserveAspectRatio="none" aria-hidden="true"></svg>');
   const pad = $('numpad');
   for (let d = 1; d <= 9; d++) {
     const b = document.createElement('button');
@@ -728,13 +767,13 @@ function render() {
   $('ringFill').setAttribute('stroke-dasharray', `${(RING * filled / G.empties).toFixed(1)} ${RING.toFixed(1)}`);
   updateTimer();
   $('timer').style.visibility = settings.showTimer ? 'visible' : 'hidden';
-  $('allTime').textContent = fmtNum(stats.allTime);
+  $('allTime').textContent = fmtNum(bestEver());
   $('diffLabel').textContent = DIFFS[G.diff].label;
   $('score').textContent = fmtNum(G.score);
   // Mistakes: one bar segment per allowed mistake, so any limit from 1 to 10 fits the same width.
   const max = settings.maxMistakes, made = max ? Math.min(G.mistakes, max) : G.mistakes;
-  $('mistakes').textContent = max ? `${made}/${max}` : `${made} · no limit`;
-  $('mistakeBar').innerHTML = max ? Array.from({length: max}, (_, k) => `<i class="${k < made ? 'on' : ''}"></i>`).join('') : '';
+  $('mistakes').textContent = max ? `${made}/${max}` : `${made}`;
+  $('mistakeBar').innerHTML = max ? Array.from({length: max}, (_, k) => `<i class="${k < made ? 'on' : ''}"></i>`).join('') : '<em>no limit</em>';
   $('mistakeBar').setAttribute('aria-label', max ? `${made} of ${max} mistakes used` : `${made} mistakes`);
   [...$('numpad').children].forEach((b, k) => {
     b.classList.toggle('done', counts[k + 1] >= 9);
@@ -747,10 +786,30 @@ function render() {
   $('controls').classList.toggle('training', !!G.training);
   $('game').classList.toggle('training', !!G.training);
   $('hintLabel').textContent = G.hints < 0 ? 'Idea' : `Idea · ${G.hints}`;
+  renderScan();
   renderHint();
   $('cover').classList.toggle('on', paused);
   $('pauseIcon').innerHTML = paused ? '<path d="M8 5l11 7-11 7z"/>' : '<path d="M9 6v12M15 6v12"/>';
 }
+
+// Plays the scanning animation over the board while the coach (or an explained Idea) shows a scanning step.
+// It is rebuilt only when the step changes, or on Replay, so other redraws don't restart it.
+function renderScan() {
+  const layer = $('scanLayer'), h = hintView;
+  const st = h && h.kind === 'step' && (h.training || h.stage === 2) && !paused ? h.step : null;
+  const sig = st && st.scan ? `${G.board.join('')}|${st.scan.d}|${st.scan.target}` : '';
+  if (sig === layer.dataset.sig) return;
+  layer.dataset.sig = sig;
+  clearTimeout(renderScan.t);
+  if (!sig) { layer.innerHTML = ''; return; }
+  const art = scanArt(st.scan, h.state.g);
+  layer.innerHTML = art.svg;
+  // In training, select the square once the animation has found it, ready for the number to be tapped.
+  if (h.training) renderScan.t = setTimeout(() => {
+    if (hintView === h && layer.dataset.sig === sig && G.sel < 0) { G.sel = st.scan.target; render(); }
+  }, art.dur * 1000);
+}
+function replayScan() { $('scanLayer').dataset.sig = ''; render(); }
 
 // The timer shows in the accent colour while a time bonus is still possible.
 function updateTimer() {
@@ -759,8 +818,7 @@ function updateTimer() {
 }
 
 function renderHome() {
-  // Top score: the best single game on any level.
-  $('homeTop').textContent = fmtNum(Math.max(0, ...Object.values(stats.byDiff).map(s => s.bestScore || 0)));
+  $('homeTop').textContent = fmtNum(bestEver());
   const canContinue = G && G.status !== 'won';
   $('btnContinue').style.display = canContinue ? '' : 'none';
   if (canContinue) $('continueInfo').textContent = `${DIFFS[G.diff].label}${G.training ? ' · Training' : ''} · ${fmtTime(G.time)}`;
@@ -774,7 +832,7 @@ function renderStats() {
   const rate = s.started ? Math.round(s.won / s.started * 100) + '%' : '–';
   const avg = s.won ? fmtTime(Math.round(s.totalTime / s.won)) : '–';
   $('statCards').innerHTML = `
-    <div class="card wide"><span>All-time score</span><b>${fmtNum(stats.allTime)}</b></div>
+    <div class="card wide"><span>Best score on any level</span><b>${fmtNum(bestEver())}</b></div>
     <div class="card"><span>Games started</span><b>${s.started}</b></div>
     <div class="card"><span>Games won</span><b>${s.won}</b></div>
     <div class="card"><span>Win rate</span><b>${rate}</b></div>
@@ -988,7 +1046,11 @@ function continueGame() {
   if (G.status === 'lost') showLost();
 }
 
-function commit() { saveGame(); render(); }
+function markPartial(i) { (G.partial = G.partial || Array(81).fill(0))[i] = 1; }
+function commit() {
+  if (G.partial) G.partial.forEach((p, i) => { if (p && !G.notes[i]) G.partial[i] = 0; });
+  saveGame(); render();
+}
 function pushHistory(i) {
   G.history.push({i, v: G.board[i], n: G.notes.slice()});
   if (G.history.length > 300) G.history.shift();
@@ -1108,7 +1170,22 @@ function undo() {
 
 // ---------- technique lessons ----------
 // One lesson per technique family: what it is, how to spot it, and why the logic holds.
+// The scanning lesson (start: shown first under "Start here") also has a routine and animated pictures (figs, see scanFig).
 const LESSONS = {
+  scanning: {title: 'How to scan the board', start: true, techs: ['hiddenSingleBox'],
+    what: 'A fixed routine for finding moves, instead of jumping around the board. Easy and Medium puzzles can be solved by scanning alone, and it\'s the first thing to try on harder ones.',
+    routine: ['<b>Pick one number</b>, starting with the one already placed most often.',
+      '<b>Go band by band</b> — the top three boxes, then the middle three, then the bottom three.',
+      '<b>Scan across</b>: in a box that still needs the number, cross off the rows that already have it.',
+      '<b>Then scan down</b>: cross off the columns that already have it. If one square is left, that\'s the answer.',
+      '<b>Next number</b>. When no number works any more, fill nearly-full rows and columns, then look for squares where only one number fits.',
+      '<b>Only then use pencilmarks</b> — a few at a time, never every number everywhere.'],
+    figs: [
+      {crop: 3, d: 7, box: 2, grid: {'00': 5, '01': 7, '05': 2, '07': 9, '12': 6, '14': 7, '16': 1, '20': 8, '23': 1, '26': 3, '28': 5},
+        cap: 'Scanning in one direction. The top band needs a 7 in its right-hand box. Rows 1 and 2 already have a 7, which leaves one empty square in row 3.'},
+      {d: 4, box: 6, puzzle: '400850061250000040600090000003005009706000405500200800000040003010000092360027004',
+        cap: 'Scanning in two directions. In the bottom band, box 7 needs a 4. Across: rows 7 and 9 have a 4. Down: column 1 has a 4. One square is left.'}],
+    why: 'Every box needs each number once. When the numbers on the board rule out all but one square in a box, that square is the answer. Working through the numbers and bands in order checks every box for every number, so nothing gets missed.'},
   fullHouse: {title: 'Full House', techs: ['fullHouse'],
     what: 'The last empty square in a row, column or box.',
     spot: 'Look for a row, column or box with eight numbers already filled in.',
@@ -1281,17 +1358,80 @@ function lessonFig(f) {
     ${back}${links}${front}</svg><figcaption>${f.cap}</figcaption></figure>`;
 }
 
+// The scanning animation for one box (sc from E.scanBox / E.scanFind) over the board g, in 90-unit board coordinates.
+// Returns {svg: inner elements, dur: seconds until the last piece has played}.
+function scanArt(sc, g) {
+  const ctr = i => [CO[i] * 10 + 5, RO[i] * 10 + 5], parts = [];
+  const el = (tag, t, attrs, style = '') => parts.push(`<${tag} ${attrs} style="--dl:${t.toFixed(2)}s;${style}"/>`);
+  const square = (i, t, attrs) => el('rect', t, `x="${CO[i] * 10 + 1}" y="${RO[i] * 10 + 1}" width="8" height="8" rx="2" ${attrs}`);
+  const cross = (i, t) => { const [x, y] = ctr(i);
+    el('path', t, `class="f" d="M${x - 2.4} ${y - 2.4}l4.8 4.8m0 -4.8l-4.8 4.8" stroke="var(--wrong)" stroke-width="1" stroke-linecap="round" fill="none" stroke-opacity=".85"`); };
+  const band = sc.box / 3 | 0;
+  // 1. every copy of the number lights up; 2. the other bands dim
+  g.forEach((v, i) => { if (v === sc.d) square(i, 0, 'class="f" fill="var(--accent)" fill-opacity=".22"'); });
+  for (const b of [0, 1, 2]) if (b !== band) el('rect', .5, `class="f" x="0" y="${b * 30}" width="90" height="30" fill="var(--card)" fill-opacity=".62"`);
+  // 3. across: each row holding the number sweeps out from its copy, then the box's squares in those rows are crossed off
+  let t = 1.1;
+  for (const {r, src} of sc.rows) {
+    const [x, y] = ctr(src);
+    el('rect', t, `class="sx" x="0" y="${r * 10 + 4.3}" width="90" height="1.4" rx=".7" fill="var(--accent)" fill-opacity=".6"`, `transform-origin:${x}px ${y}px`);
+    t += .4;
+  }
+  if (sc.rows.length) { t += .3; sc.outR.forEach(i => cross(i, t)); t += .6; }
+  // 4. down: the same with columns
+  for (const {c, src} of sc.cols) {
+    const [x, y] = ctr(src);
+    el('rect', t, `class="sy" x="${c * 10 + 4.3}" y="0" width="1.4" height="90" rx=".7" fill="var(--accent)" fill-opacity=".6"`, `transform-origin:${x}px ${y}px`);
+    t += .4;
+  }
+  if (sc.cols.length) { t += .3; sc.outC.forEach(i => cross(i, t)); t += .6; }
+  // 5. the one square left
+  square(sc.target, t, 'class="pulse" fill="none" stroke="var(--accent)"');
+  return {svg: parts.join(''), dur: t + 1};
+}
+
+// An animated lesson picture: a board (a puzzle string, or a few squares in grid) cropped to its first `crop` rows,
+// with the scanning animation for number d in a box played over it, ending with the answer written in.
+function scanFig(f) {
+  const g = f.puzzle ? E.fromStr(f.puzzle) : Array.from({length: 81}, (_, i) => f.grid[`${RO[i]}${CO[i]}`] || 0);
+  const sc = E.scanBox(E.makeState(g), f.d, f.box), H = (f.crop || 9) * 10;
+  if (!sc) return '';
+  const art = scanArt(sc, g);
+  let board = '';
+  for (let i = 0; i < 81; i++) {
+    if (RO[i] * 10 >= H) break;
+    const x = CO[i] * 10, y = RO[i] * 10;
+    board += `<rect x="${x}" y="${y}" width="10" height="10" fill="${BO[i] % 2 ? 'var(--card)' : 'var(--tint)'}" stroke="var(--line)" stroke-width=".3"/>`;
+    if (g[i]) board += `<text x="${x + 5}" y="${y + 7.2}" text-anchor="middle" font-size="6.4" fill="var(--given)">${g[i]}</text>`;
+  }
+  const [tx, ty] = [CO[sc.target] * 10 + 5, RO[sc.target] * 10 + 7.2];
+  const answer = `<text class="f" x="${tx}" y="${ty}" text-anchor="middle" font-size="6.6" font-weight="800" fill="var(--accent)" style="--dl:${(art.dur - .4).toFixed(2)}s">${f.d}</text>`;
+  return `<figure class="lfig"><svg class="scan" viewBox="0 0 90 ${H}" role="img" aria-label="${f.cap}">${board}${art.svg}${answer}</svg>
+    <button class="replay" type="button"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Replay</button>
+    <figcaption>${f.cap}</figcaption></figure>`;
+}
+// Replay restarts a lesson picture's animation by swapping in a fresh copy of it.
+document.addEventListener('click', e => {
+  const b = e.target.closest('.lfig .replay');
+  if (b) { const svg = b.parentNode.querySelector('svg'); svg.replaceWith(svg.cloneNode(true)); }
+});
+
 function showLesson(key, back) {
   const L = LESSONS[key], lv = E.TECH[L.techs[0]].level;
-  showModal(`<h2>${L.title}</h2><p><span class="chip lesson-chip">${levelLabel(lv)}</span></p>
-    <div class="lesson"><h3>What it is</h3><p>${L.what}</p>${lessonFig(LESSON_FIGS[key])}<h3>How to spot it</h3><p>${L.spot}</p><h3>Why it works</h3><p>${L.why}</p></div>`,
+  const body = L.routine
+    ? `<h3>What it is</h3><p>${L.what}</p>${scanFig(L.figs[0])}<h3>The routine</h3><ol class="routine">${L.routine.map(x => `<li>${x}</li>`).join('')}</ol>` +
+      `${scanFig(L.figs[1])}<h3>Why it works</h3><p>${L.why}</p>`
+    : `<h3>What it is</h3><p>${L.what}</p>${lessonFig(LESSON_FIGS[key])}<h3>How to spot it</h3><p>${L.spot}</p><h3>Why it works</h3><p>${L.why}</p>`;
+  showModal(`<h2>${L.title}</h2><p><span class="chip lesson-chip">${L.start ? 'Start here' : levelLabel(lv)}</span></p>
+    <div class="lesson">${body}</div>`,
     back ? [{label: 'All techniques', cls: '', onClick: showLearn}, {label: 'Got it', cls: 'primary'}] : [{label: 'Got it', cls: 'primary'}]);
 }
 
 function showLearn() {
-  const groups = [1, 2, 3, 4, 5].map(lv => {
-    const keys = Object.keys(LESSONS).filter(k => E.TECH[LESSONS[k].techs[0]].level === lv);
-    return `<h3>${levelLabel(lv)}</h3>` + keys.map(k => `<button class="btn" data-lesson="${k}">${LESSONS[k].title}</button>`).join('');
+  const btn = k => `<button class="btn" data-lesson="${k}">${LESSONS[k].title}</button>`;
+  const groups = '<h3>Start here</h3>' + Object.keys(LESSONS).filter(k => LESSONS[k].start).map(btn).join('') + [1, 2, 3, 4, 5].map(lv => {
+    const keys = Object.keys(LESSONS).filter(k => !LESSONS[k].start && E.TECH[LESSONS[k].techs[0]].level === lv);
+    return `<h3>${levelLabel(lv)}</h3>` + keys.map(btn).join('');
   }).join('');
   showModal(`<h2>Learn techniques</h2><p>From the first steps to the hardest patterns this game uses. Turn on Training mode to see them in a real puzzle.</p>
     <div class="difflist" id="learnList">${groups}</div>`, [{label: 'Close', cls: 'ghost'}]);
@@ -1305,7 +1445,7 @@ function showLearn() {
 // A hint teaches rather than reveals: first a nudge (the technique and where to look), then the pattern
 // explained on the board, then — only if asked — the move is made. Wrong numbers and broken notes come first,
 // because every later step would build on them.
-const levelLabel = lv => Object.entries(DIFFS).find(([k, d]) => d.level === lv && k !== 'beginner')[1].label;
+const levelLabel = lv => Object.entries(DIFFS).find(([k, d]) => d.level === lv && k !== 'beginner' && k !== 'semiEasy')[1].label;
 
 // What a careful solver knows from here: the correct numbers placed plus eliminations from earlier hints.
 function hintState() {
@@ -1317,12 +1457,30 @@ function makeView(o) {
   return {area: new Set(o.area || []), focus: new Set(o.focus || []), focusB: new Set(o.focusB || []),
     target: new Set(o.target || []), elim: new Map(o.elim || []), cands: new Map(o.cands || []), digits: o.digits || 0};
 }
+// The scanning routine: numbers in order of how many are already placed (most first, fixed for the game), each
+// checked band by band. G.scanAt remembers where the routine is, so it carries on from there rather than jumping about.
+function scanStep(s) {
+  if (!G.scanOrder) {
+    const n = d => G.board.filter((v, i) => v === d && v === G.solution[i]).length;
+    G.scanOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort((a, b) => n(b) - n(a) || a - b);
+  }
+  const st = E.scanFind(s, G.scanOrder, G.scanAt || 0);
+  if (st) G.scanAt = st.scan.at;
+  return st;
+}
 function stepView(step, s) {
+  if (step.scan) return makeView({}); // the scanning animation does the explaining
   const elim = (step.elim || []).map(e => [e.i, e.m]);
   const involved = new Set([...(step.focus || []), ...(step.focusB || []), ...elim.map(e => e[0])]);
+  // Only the numbers the step is about (and those it removes) are shown, not every candidate, to keep the board readable.
+  const em = new Map(elim);
   return makeView({area: step.area, focus: step.focus, focusB: step.focusB, target: (step.place || []).map(p => p.i), elim,
-    cands: step.place ? [] : [...involved].filter(i => !s.g[i]).map(i => [i, s.c[i]]), digits: step.digits});
+    cands: step.place ? [] : [...involved].filter(i => !s.g[i]).map(i => [i, s.c[i] & (step.digits | (em.get(i) || 0))]), digits: step.digits});
 }
+// Pencilmarks the player (or an Idea) wrote as a partial list — "the 7 could go here" — rather than every candidate.
+const partialNotes = i => G.partial && G.partial[i] || E.popcount(G.notes[i]) < 2;
+// A single-number elimination step can first be helped by pencilling that number into the area to look at.
+const singleDigit = st => st && st.elim && E.popcount(st.digits) === 1 ? Math.log2(st.digits) : 0;
 
 // The next thing worth saying about the position: a wrong number, a broken note, or the next technique step.
 // stage 1 = nudge only, stage 2 = full explanation.
@@ -1330,11 +1488,16 @@ function buildHint(stage) {
   const wrong = G.board.findIndex((v, i) => v && v !== G.solution[i]);
   if (wrong >= 0) return {kind: 'wrong', cell: wrong, view: makeView({focus: [wrong]})};
   const s = hintState();
-  const badNote = G.notes.findIndex((m, i) => m && !G.board[i] && !(m & (1 << G.solution[i])));
+  // A full list of pencilmarks that leaves out the right number is a problem; a partial one ("the 7 could go here") isn't.
+  const badNote = G.notes.findIndex((m, i) => m && !G.board[i] && !partialNotes(i) && !(m & (1 << G.solution[i])));
   if (badNote >= 0) return {kind: 'notes', cell: badNote, state: s, view: makeView({focus: [badNote]})};
-  let step = E.findStep(s, 5);
+  // The scanning routine comes first; other techniques only once scanning finds nothing.
+  let step = scanStep(s);
+  if (step) return {kind: 'step', stage, step, state: s,
+    view: stage === 1 ? makeView({area: G.board.flatMap((v, i) => (RO[i] / 3 | 0) === step.scan.band ? [i] : [])}) : stepView(step, s)};
+  step = E.findStep(s, 5);
   // If the player has already crossed those candidates out of their notes, accept it and look further.
-  while (step && step.elim && step.elim.every(e => G.notes[e.i] && !(G.notes[e.i] & e.m))) {
+  while (step && step.elim && step.elim.every(e => G.notes[e.i] && !partialNotes(e.i) && !(G.notes[e.i] & e.m))) {
     for (const e of step.elim) { G.elims.push([e.i, e.m]); s.c[e.i] &= ~e.m; }
     step = E.findStep(s, 5);
   }
@@ -1354,7 +1517,8 @@ const coachSig = () => G.board.join('') + '|' + G.notes.join(',') + '|' + G.elim
 function refreshCoach() {
   if (hintView && hintView.training && hintView.sig === coachSig()) return;
   const h = buildHint(2);
-  if (h.kind === 'step' && h.step.place) G.sel = h.step.place[0].i;
+  // A scanning step selects its square only once the animation has found it (see renderScan).
+  if (h.kind === 'step' && h.step.place) G.sel = h.step.scan ? -1 : h.step.place[0].i;
   h.training = true;
   h.sig = coachSig();
   hintView = h;
@@ -1391,17 +1555,34 @@ function renderHint() {
     title = st.name;
     chip = levelLabel(st.level);
     if (h.stage === 1) {
+      const d = singleDigit(st);
+      if (st.scan) title = 'Scanning';
       text = st.nudge;
       buttons = [['hintShow', canShow ? 'Show me' : 'No ideas left', 'primary', !canShow]];
+      if (d) buttons.push(['hintPencil', `Pencil in the ${d}s`, '']);
     } else {
       text = st.text + (st.elim ? '<br><small>Struck-through red candidates are the ones removed.</small>' : '');
       buttons = [['hintApply', st.place ? 'Fill it in' : 'Apply to my pencilmarks', 'primary']];
+      if (st.scan) buttons.push(['scanReplay', 'Replay', '']);
     }
   }
   buttons.push(['hintClose', 'Close', '']);
   panel.innerHTML = `<h4>${title}${chip ? `<span class="chip">${chip}</span>` : ''}</h4><p>${text}</p><div class="hbtns">` +
     buttons.map(([act, label, cls, off]) => `<button class="btn ${cls}" data-act="${act}" ${off ? 'disabled' : ''}>${label}</button>`).join('') + '</div>';
   panel.classList.add('on');
+}
+
+const REPLAY_BTN = '<button class="iconbtn" data-act="scanReplay" aria-label="Replay the animation"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button>';
+// Where the coach is in the routine: the numbers in scanning order (finished ones struck through), and the band and
+// direction being scanned — or, once scanning finds nothing, which later step of the routine this is.
+function scanStrip(st) {
+  const done = d => G.board.filter((v, i) => v === d && v === G.solution[i]).length === 9;
+  const sc = st.scan, order = G.scanOrder || [1, 2, 3, 4, 5, 6, 7, 8, 9];
+  const where = sc ? `${E.BAND_NAMES[sc.band][0].toUpperCase() + E.BAND_NAMES[sc.band].slice(1)} band · ${sc.cols.length ? 'across + down' : 'across'}`
+    : st.tech === 'fullHouse' || st.tech === 'hiddenSingleLine' ? 'Nearly-full lines'
+    : st.tech === 'nakedSingle' ? 'One number fits' : 'Pencilmarks';
+  return `<div class="scanstrip" aria-label="Scanning order">${order.map(d =>
+    `<i class="${sc && sc.d === d ? 'on' : done(d) ? 'done' : ''}">${d}</i>`).join('')}<span>${where}</span></div>`;
 }
 
 function renderCoach(panel, h) {
@@ -1421,22 +1602,29 @@ function renderCoach(panel, h) {
   } else {
     const st = h.step, d = st.place && st.place[0].d;
     title = st.name;
-    chip = levelLabel(st.level);
-    text = st.text + (st.place
+    chip = st.scan ? 'Routine' : levelLabel(st.level);
+    text = st.text + (st.scan
+      ? `<br><b>Tap it, then ${d} — or press Next.</b>`
+      : st.place
       ? `<br><b>Tap ${d} to place it — or press Next.</b>`
       : `<br><b>Cross the red candidates out of your pencilmarks — or press Next to do it for you.</b>`);
     buttons = [['coachLesson', 'How it works', ''], ['hintApply', 'Next ▸', 'primary']];
   }
-  // With the tool row hidden in training, Undo lives here — and Notes too, when the step is about crossing out candidates.
+  // With the tool row hidden in training, Undo lives here — and Notes too, when the step is about crossing out
+  // candidates, or Replay for a scanning step.
   const icons = `<button class="iconbtn" data-act="undo" aria-label="Undo"><svg class="i" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg></button>` +
-    (h.step && h.step.elim ? `<button class="iconbtn ${G.notesMode ? 'on' : ''}" data-act="notes" aria-label="Pencilmarks"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : '');
-  panel.innerHTML = `<h4>${title}<span class="chip">${chip}</span></h4><p>${text}</p><div class="hbtns">${icons}` +
+    (h.step && h.step.elim ? `<button class="iconbtn ${G.notesMode ? 'on' : ''}" data-act="notes" aria-label="Pencilmarks"><svg class="i" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : '') +
+    (h.step && h.step.scan ? REPLAY_BTN : '');
+  // A scanning step's strip says what the title would, so it takes the title's place and leaves the text more room.
+  const head = h.step && h.step.scan ? '' : `<h4>${title}<span class="chip">${chip}</span></h4>`;
+  panel.innerHTML = `${head}${h.kind === 'step' ? scanStrip(h.step) : ''}<p>${text}</p><div class="hbtns">${icons}` +
     buttons.map(([act, label, cls]) => `<button class="btn ${cls}" data-act="${act}">${label}</button>`).join('') + '</div>';
   panel.classList.add('on');
 }
 
 const hintActions = {
-  coachLesson() { if (hintView && hintView.step) showLesson(lessonFor(hintView.step.tech)); },
+  coachLesson() { if (hintView && hintView.step) showLesson(hintView.step.scan ? 'scanning' : lessonFor(hintView.step.tech)); },
+  scanReplay: replayScan,
   hintClose() { hintView = null; render(); },
   hintShow() {
     if (!hintView || G.hints === 0) return;
@@ -1458,14 +1646,24 @@ const hintActions = {
       }
       if (isSolved()) return win();
     } else {
-      // Fill in the candidates of every square the step talks about (if the player hadn't noted them), then remove.
+      // Pencil in only the pattern's own numbers where the player has no notes (never every candidate), then remove.
       pushHistory(step.elim[0].i);
       for (const e of step.elim) G.elims.push([e.i, e.m]);
-      for (const i of new Set([...(step.focus || []), ...(step.focusB || []), ...step.elim.map(e => e.i)])) {
-        if (!G.board[i] && !G.notes[i]) G.notes[i] = state.c[i];
+      for (const i of new Set([...(step.focus || []), ...(step.focusB || [])])) {
+        if (!G.board[i] && !G.notes[i]) { G.notes[i] = state.c[i] & step.digits; markPartial(i); }
       }
       for (const e of step.elim) G.notes[e.i] &= ~e.m;
     }
+    commit();
+  },
+  // Pencils one number into the squares of the hint's area where it can still go: a light-touch nudge.
+  hintPencil() {
+    const {step, state} = hintView, d = singleDigit(step), bit = 1 << d;
+    // Leave alone squares with a full list of notes: they already show the number, or the player crossed it out.
+    const where = [...new Set(step.area)].filter(i => !G.board[i] && state.c[i] & bit && (!G.notes[i] || partialNotes(i)));
+    if (!where.length) return;
+    pushHistory(where[0]);
+    for (const i of where) { if (!G.notes[i]) markPartial(i); G.notes[i] |= bit; }
     commit();
   },
   hintEraseWrong() {
@@ -1561,7 +1759,6 @@ function win() {
   if (newBest) s.best = G.time;
   if (newBestScore) s.bestScore = G.score;
   s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak);
-  stats.allTime += G.score;
   saveStats();
   commit();
   buzz([60, 60, 60]);

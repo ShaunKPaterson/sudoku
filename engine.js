@@ -498,6 +498,48 @@ const FAMILIES = [
   {id: 'chains',        name: 'XY-Chains', techs: ['xyChain']},
 ];
 
+// ---------- scanning (the routine taught in Training) ----------
+// Cross-hatching one box for one number, using only the numbers on the board: rows that already hold d rule out
+// their squares ("across"), then columns that hold d rule out the rest ("down"). Returns the target and what to draw.
+function scanBox(s, d, b) {
+  const box = UNITS[18 + b];
+  if (box.some(i => s.g[i] === d)) return null;
+  const rowSrc = r => UNITS[r].find(i => s.g[i] === d), colSrc = c => UNITS[9 + c].find(i => s.g[i] === d);
+  const empty = box.filter(i => !s.g[i]);
+  const free = empty.filter(i => rowSrc(RO[i]) === undefined && colSrc(CO[i]) === undefined);
+  if (free.length !== 1) return null;
+  const target = free[0];
+  const outR = empty.filter(i => rowSrc(RO[i]) !== undefined), outC = empty.filter(i => i !== target && !outR.includes(i));
+  const rows = [...new Set(outR.map(i => RO[i]))].map(r => ({r, src: rowSrc(r)}));
+  const cols = [...new Set(outC.map(i => CO[i]))].map(c => ({c, src: colSrc(c)}));
+  return {d, box: b, target, rows, cols, outR, outC};
+}
+
+const BAND_NAMES = ['top', 'middle', 'bottom'];
+// Works through the routine from position `from` (0–26: number order[k / 3], band k % 3) and returns the first
+// box that scanning solves, as a placement step with its scan details, or null if scanning finds nothing.
+function scanFind(s, order, from = 0) {
+  for (let n = 0; n < 27; n++) {
+    const k = (from + n) % 27, d = order[k / 3 | 0], band = k % 3;
+    for (let b = band * 3; b < band * 3 + 3; b++) {
+      const sc = scanBox(s, d, b);
+      if (!sc) continue;
+      sc.band = band; sc.at = k;
+      const lines = (word, a) => a.length > 1 ? `${word}s ${list(a)}` : `${word} ${a[0]}`;
+      const rowsTxt = lines('row', sc.rows.map(x => x.r + 1)), colsTxt = lines('column', sc.cols.map(x => x.c + 1));
+      const two = sc.cols.length > 0;
+      return {place: [{i: sc.target, d}], area: UNITS[18 + b], focus: [...sc.rows, ...sc.cols].map(x => x.src), digits: 1 << d,
+        tech: 'hiddenSingleBox', name: two ? 'Scanning in two directions' : 'Scanning in one direction', level: 1, scan: sc,
+        nudge: `Scan the ${d}s in the ${BAND_NAMES[band]} band.`,
+        text: `${cap(unitName(18 + b))} has no ${d} yet.` +
+          (sc.rows.length ? ` Across: ${rowsTxt} already ${sc.rows.length > 1 ? 'have' : 'has'} a ${d}.` : '') +
+          (two ? ` Down: ${colsTxt} ${sc.cols.length > 1 ? 'have' : 'has'} ${sc.rows.length ? 'one too' : 'a ' + d}.` : '') +
+          ` That leaves one square for the ${d}: ${cellName(sc.target)}.`};
+    }
+  }
+  return null;
+}
+
 function findStep(s, maxLevel = 5) {
   for (const t of TECHNIQUES) {
     if (t.level > maxLevel) continue;
@@ -557,6 +599,9 @@ const RECIPES = {
     flowing: {clues: 48, minOpts: 6}, tight: {clues: 42, minOpts: 3}},
   easy:     {level: 1, techs: ['fullHouse', 'hiddenSingleBox', 'hiddenSingleLine'], clues: 36, minBox: 3, minOpts: 3,
     flowing: {clues: 39, minOpts: 5}, tight: {clues: 33, minOpts: 2}},
+  // Semi-Easy: a Medium puzzle with addBack clues put back (still needing a naked single), so there's more to start from.
+  semiEasy: {level: 2, techs: ['fullHouse', 'hiddenSingleBox', 'hiddenSingleLine', 'nakedSingle'], clues: 28, minBox: 2, minOpts: 2, addBack: 4,
+    flowing: {clues: 29, minOpts: 3, addBack: 6}, tight: {clues: 26, minOpts: 1, addBack: 4}},
   medium:   {level: 2, techs: ['fullHouse', 'hiddenSingleBox', 'hiddenSingleLine', 'nakedSingle'], clues: 28, minBox: 2, minOpts: 2,
     flowing: {clues: 29, minOpts: 3}, tight: {clues: 26, minOpts: 1}},
 };
@@ -621,8 +666,23 @@ function generateOnce(level, prefs = {}) {
   // only if the grade matches (about 1 in 10 random minimal puzzles needs Master techniques).
   const recipe = level <= 2 ? recipeFor(prefs.recipe || (level === 1 ? 'easy' : 'medium'), prefs.pace) : null;
   const puzzle = dig(solution, {symmetric, recipe});
-  const meta = grade(puzzle, 5);
+  let meta = grade(puzzle, 5);
+  if (recipe && recipe.addBack && meta.level === level) meta = addBack(puzzle, solution, recipe.addBack, level, symmetric) || meta;
   return {puzzle: toStr(puzzle), solution: toStr(solution), meta};
+}
+
+// Puts up to n clues back (in symmetric pairs if asked), keeping only those that leave the grade unchanged.
+// Returns the new grade, or null if nothing was added. Changes puzzle in place.
+function addBack(puzzle, solution, n, level, symmetric) {
+  let added = 0, meta = null;
+  for (const i of shuffle([...Array(81).keys()])) {
+    const j = 80 - i, pair = symmetric && j !== i; // a symmetric dig leaves i and j both empty or both filled
+    if (added >= n || puzzle[i]) continue;
+    puzzle[i] = solution[i]; if (pair) puzzle[j] = solution[j];
+    const m = grade(puzzle, 5);
+    if (m.level === level) { meta = m; added += pair ? 2 : 1; } else { puzzle[i] = 0; if (pair) puzzle[j] = 0; }
+  }
+  return meta;
 }
 
 // Pace thresholds (average singles available) per level, from sampling generated puzzles.
@@ -672,7 +732,7 @@ function transform(puzzle, solution, keepSymmetry = true) {
 
 const Engine = {
   RO, CO, BO, UNITS, PEERS, sees, popcount, digitsOf, shuffle, solveCount, makeState, applyStep, findStep,
-  grade, dig, generateOnce, matchesPrefs, transform, toStr, fromStr, cellName, unitName,
+  grade, dig, generateOnce, matchesPrefs, transform, toStr, fromStr, cellName, unitName, scanBox, scanFind, BAND_NAMES,
   TECHNIQUES, TECH, FAMILIES, PACE, RECIPES, flow,
 };
 
