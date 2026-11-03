@@ -1,10 +1,10 @@
-﻿# Sudoku
+# Sudoku
 
 A Sudoku game for your phone that grades puzzles the way experienced solvers do, and teaches you how to solve them.
 
 **Play it here: https://shaunkpaterson.github.io/sudoku/**
 
-On Android, open the link in Chrome and choose **â‹® â†’ Add to Home screen** (or **Install app**). The game then runs full screen like a normal app and works offline.
+On Android, open the link in Chrome and choose **⋮ → Add to Home screen** (or **Install app**). The game then runs full screen like a normal app and works offline.
 
 ## What makes it different
 
@@ -22,7 +22,7 @@ On Android, open the link in Chrome and choose **â‹® â†’ Add to Home sc
 
 Every puzzle has exactly one solution and can be solved by logic alone, with no guessing.
 
-**The gentler levels never leave you stuck.** Beginner, Easy and Medium are built so that at every point of the solve there are several squares you could fill next (at least 4 on Beginner, 3 on Easy, 2 on Medium), and every box starts with a few numbers. A Beginner game is about a 5â€“10 minute play.
+**The gentler levels never leave you stuck.** Beginner, Easy and Medium are built so that at every point of the solve there are several squares you could fill next (at least 4 on Beginner, 3 on Easy, 2 on Medium), and every box starts with a few numbers. A Beginner game is about a 5–10 minute play.
 
 **A scanning routine instead of jumping around.** The game teaches one fixed way to look at the board: pick a number, go band by band (three boxes at a time), scan across the rows and then down the columns. Only when that finds nothing does it move on to nearly-full lines, squares where only one number fits, and finally pencilmarks. Ideas and the Training coach both follow this order.
 
@@ -43,7 +43,7 @@ Every puzzle has exactly one solution and can be solved by logic alone, with no 
 - Small celebrations when you complete a row, column, box or number
 - Puzzle style preferences: favourite techniques, pace (flowing or tight) and symmetric layouts
 - Statistics for each level: win rate, best and average time, best score and streaks, with a button to reset one level
-- Light and dark mode, eight accent colours plus a custom colour, and six fonts
+- Light and dark mode, eight accent colours plus a custom colour, and seven fonts
 - Saves your game automatically and works offline once installed
 
 ## How it's built
@@ -69,8 +69,8 @@ Then open `http://localhost:8060`.
 
 The grading approach and technique definitions draw on:
 
-- [sudoku.coach â€” Sudoku Difficulty](https://sudoku.coach/en/learn/sudoku-difficulty)
-- [SudokuWiki â€” Grading Puzzles](https://www.sudokuwiki.org/Grading_Puzzles)
-- [Kristanix â€” Sudoku Solving Techniques](https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php)
+- [sudoku.coach — Sudoku Difficulty](https://sudoku.coach/en/learn/sudoku-difficulty)
+- [SudokuWiki — Grading Puzzles](https://www.sudokuwiki.org/Grading_Puzzles)
+- [Kristanix — Sudoku Solving Techniques](https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php)
 - [HoDoKu technique guides](https://hodoku.sourceforge.net/en/techniques.php)
-- [Conceptis Puzzles â€” Sudoku techniques](https://www.conceptispuzzles.com/index.aspx?uri=puzzle/sudoku/techniques) (the scanning routine)
+- [Conceptis Puzzles — Sudoku techniques](https://www.conceptispuzzles.com/index.aspx?uri=puzzle/sudoku/techniques) (the scanning routine)
