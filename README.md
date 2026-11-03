@@ -1,10 +1,10 @@
-# Sudoku
+﻿# Sudoku
 
 A Sudoku game for your phone that grades puzzles the way experienced solvers do, and teaches you how to solve them.
 
 **Play it here: https://shaunkpaterson.github.io/sudoku/**
 
-On Android, open the link in Chrome and choose **⋮ → Add to Home screen** (or **Install app**). The game then runs full screen like a normal app and works offline.
+On Android, open the link in Chrome and choose **â‹® â†’ Add to Home screen** (or **Install app**). The game then runs full screen like a normal app and works offline.
 
 ## What makes it different
 
@@ -22,7 +22,7 @@ On Android, open the link in Chrome and choose **⋮ → Add to Home screen** (o
 
 Every puzzle has exactly one solution and can be solved by logic alone, with no guessing.
 
-**The gentler levels never leave you stuck.** Beginner, Easy and Medium are built so that at every point of the solve there are several squares you could fill next (at least 4 on Beginner, 3 on Easy, 2 on Medium), and every box starts with a few numbers. A Beginner game is about a 5–10 minute play.
+**The gentler levels never leave you stuck.** Beginner, Easy and Medium are built so that at every point of the solve there are several squares you could fill next (at least 4 on Beginner, 3 on Easy, 2 on Medium), and every box starts with a few numbers. A Beginner game is about a 5â€“10 minute play.
 
 **A scanning routine instead of jumping around.** The game teaches one fixed way to look at the board: pick a number, go band by band (three boxes at a time), scan across the rows and then down the columns. Only when that finds nothing does it move on to nearly-full lines, squares where only one number fits, and finally pencilmarks. Ideas and the Training coach both follow this order.
 
@@ -30,7 +30,7 @@ Every puzzle has exactly one solution and can be solved by logic alone, with no 
 
 **Training mode** puts a coach beside the board. It works through the scanning routine with an animation: the number's copies light up, lines sweep across rows and down columns, ruled-out squares are crossed off and the one square left pulses. A strip shows which number and band the coach is on. Training games aren't scored.
 
-**Learn techniques** on the home screen starts with **How to scan the board** (two animated pictures and the routine), then has a lesson for every technique: what it is, a picture of it on the board, how to spot it and why it works.
+**Learn techniques** on the home screen starts with **How to scan the board** (two animated pictures and the routine), then has a lesson for every technique: what it is, an animated picture of it on the board (with Replay), how to spot it and why it works.
 
 **Number helper.** Tap a number on the board (or on the number pad with no square selected) and the board shows where it can go, on every level. Choose in Settings: **Shade** greys out every square the number can't go in, so the open squares stand out; **Lines** only tints the rows and columns its copies cover, so you still do the last step yourself; or **Off**.
 
@@ -39,10 +39,10 @@ Every puzzle has exactly one solution and can be solved by logic alone, with no 
 - Seven levels, from Beginner to Master, with a fresh puzzle every game
 - Pencilmarks, undo, clear, and ideas (1, 3, 5, 10 or unlimited per game)
 - A mistake limit you choose (1 to 10, or none), with a second chance
-- Scoring with bonuses for finished rows, columns and boxes, plus a time bonus for beating the target time; your best single game is shown as **Best**
+- Scoring with bonuses for finished rows, columns and boxes, plus a time bonus for beating the target time; your best single game is shown as **Best score** on the home screen and in Statistics; the game screen shows the puzzle's **Pace**
 - Small celebrations when you complete a row, column, box or number
 - Puzzle style preferences: favourite techniques, pace (flowing or tight) and symmetric layouts
-- Statistics for each level: win rate, best and average time, best score and streaks
+- Statistics for each level: win rate, best and average time, best score and streaks, with a button to reset one level
 - Light and dark mode, eight accent colours plus a custom colour, and six fonts
 - Saves your game automatically and works offline once installed
 
@@ -69,8 +69,8 @@ Then open `http://localhost:8060`.
 
 The grading approach and technique definitions draw on:
 
-- [sudoku.coach — Sudoku Difficulty](https://sudoku.coach/en/learn/sudoku-difficulty)
-- [SudokuWiki — Grading Puzzles](https://www.sudokuwiki.org/Grading_Puzzles)
-- [Kristanix — Sudoku Solving Techniques](https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php)
+- [sudoku.coach â€” Sudoku Difficulty](https://sudoku.coach/en/learn/sudoku-difficulty)
+- [SudokuWiki â€” Grading Puzzles](https://www.sudokuwiki.org/Grading_Puzzles)
+- [Kristanix â€” Sudoku Solving Techniques](https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php)
 - [HoDoKu technique guides](https://hodoku.sourceforge.net/en/techniques.php)
-- [Conceptis Puzzles — Sudoku techniques](https://www.conceptispuzzles.com/index.aspx?uri=puzzle/sudoku/techniques) (the scanning routine)
+- [Conceptis Puzzles â€” Sudoku techniques](https://www.conceptispuzzles.com/index.aspx?uri=puzzle/sudoku/techniques) (the scanning routine)

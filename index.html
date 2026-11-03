@@ -126,7 +126,11 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .scan .sx{--g:scaleX(0)}
 .scan .sy{--g:scaleY(0)}
 .scan .pulse{opacity:0;animation:spulse .9s ease-in-out var(--dl,0s) 3 forwards}
+.scan .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:sdraw .45s ease-out var(--dl,0s) forwards}
+.scan .pulse.big{animation-name:spulseB}
 @keyframes sfade{to{opacity:1}}
+@keyframes sdraw{to{stroke-dashoffset:0}}
+@keyframes spulseB{0%{opacity:.3;stroke-width:2}50%{opacity:1;stroke-width:4.5}100%{opacity:1;stroke-width:3}}
 @keyframes sgrow{from{transform:var(--g)}to{transform:none}}
 @keyframes spulse{0%{opacity:.3;stroke-width:1.2}50%{opacity:1;stroke-width:2.6}100%{opacity:1;stroke-width:1.8}}
 @media (prefers-reduced-motion:reduce){.scan *{animation-duration:.01s!important;animation-delay:0s!important}}
@@ -254,6 +258,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 14px;overflow:auto}
 .card{background:var(--rel);border-radius:14px;padding:14px}
 .card span{display:block;font-size:13px;color:var(--muted)}
+.cards .reset{grid-column:1/-1;margin:2px 0 12px;padding:10px;font-size:15px;color:var(--wrong)}
 .card b{display:block;font-size:24px;margin-top:6px;font-variant-numeric:tabular-nums}
 .card.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center}
 .card.wide b{margin:0}
@@ -286,6 +291,20 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .seg button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .sheet h3{margin:20px 0 2px;font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
 .sublabel{font-size:16px;margin:14px 2px 10px}
+.setmenu{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.setcard{background:var(--rel);border-radius:16px;padding:0 12px}
+.setitem{display:flex;align-items:center;gap:12px;width:100%;padding:12px 0;border:0;border-bottom:1px solid var(--line);
+  background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer}
+.setitem:last-child{border-bottom:0}
+.setitem .ic{width:38px;height:38px;border-radius:11px;background:var(--card);color:var(--accent);display:grid;place-items:center;flex:none}
+.setitem .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.setitem .txt{flex:1;min-width:0;font-size:16px;font-weight:700}
+.setitem small{display:block;font-size:12.5px;font-weight:500;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.setitem .chev{width:18px;height:18px;flex:none;fill:none;stroke:var(--muted);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.sethead{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;margin:-8px -6px 4px}
+.sethead h2{margin:0}
+.row.col{flex-direction:column;align-items:stretch;gap:10px}
+.row.col .seg{align-self:flex-start}
 .sheet .note{font-size:14px;color:var(--muted);line-height:1.45;margin:6px 2px 0;text-align:left}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:34px;height:34px;border-radius:50%;border:0;background:var(--rel);color:var(--accent);font-size:20px;
@@ -388,7 +407,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
       <div class="stats">
         <div><span>Score</span><b id="score">0</b></div>
         <div><span>Mistakes <b id="mistakes">0/3</b></span><span class="mbar" id="mistakeBar" role="img"></span></div>
-        <div><span>Best</span><b id="allTime">0</b></div>
+        <div><span>Pace</span><b id="paceLabel">–</b></div>
       </div>
     </div>
     <div class="boardwrap">
@@ -767,7 +786,7 @@ function render() {
   $('ringFill').setAttribute('stroke-dasharray', `${(RING * filled / G.empties).toFixed(1)} ${RING.toFixed(1)}`);
   updateTimer();
   $('timer').style.visibility = settings.showTimer ? 'visible' : 'hidden';
-  $('allTime').textContent = fmtNum(bestEver());
+  $('paceLabel').textContent = paceLabel();
   $('diffLabel').textContent = DIFFS[G.diff].label;
   $('score').textContent = fmtNum(G.score);
   // Mistakes: one bar segment per allowed mistake, so any limit from 1 to 10 fits the same width.
@@ -811,6 +830,18 @@ function renderScan() {
 }
 function replayScan() { $('scanLayer').dataset.sig = ''; render(); }
 
+// The pace the puzzle was made with (Settings → Pace). With "Any", Hard and above are measured against the
+// same thresholds the Flowing/Tight filters use; the gentle levels use the middle recipe, shown as "Balanced".
+function paceLabel() {
+  let p = G.pace;
+  const lv = DIFFS[G.diff].level;
+  if (p !== 'flowing' && p !== 'tight' && lv >= 3 && G.meta && G.meta.pace) {
+    const [lo, hi] = E.PACE[lv];
+    p = G.meta.pace < lo ? 'tight' : G.meta.pace > hi ? 'flowing' : 'any';
+  }
+  return {flowing: 'Flowing', tight: 'Tight'}[p] || 'Balanced';
+}
+
 // The timer shows in the accent colour while a time bonus is still possible.
 function updateTimer() {
   $('timer').textContent = fmtTime(G.time);
@@ -841,7 +872,16 @@ function renderStats() {
     <div class="card"><span>Target time</span><b>${fmtTime(DIFFS[statsTab].par)}</b></div>
     <div class="card"><span>Average time</span><b>${avg}</b></div>
     <div class="card"><span>Current streak</span><b>${s.streak}</b></div>
-    <div class="card"><span>Best streak</span><b>${s.bestStreak}</b></div>`;
+    <div class="card"><span>Best streak</span><b>${s.bestStreak}</b></div>
+    <button class="btn ghost reset" data-act="resetLevel">Reset ${DIFFS[statsTab].label} statistics</button>`;
+}
+
+// Clears one level's statistics (the tab being shown); other levels and a game in progress are left alone.
+function resetLevel() {
+  const k = statsTab, label = DIFFS[k].label;
+  showModal(`<h2>Reset ${label}?</h2><p>This clears your ${label} games, wins, best time, best score and streaks. Other levels aren't touched. It can't be undone.</p>`,
+    [{label: `Reset ${label}`, cls: 'primary', onClick() { stats.byDiff[k] = freshStats().byDiff[k]; saveStats(); renderStats(); toast(`${label} statistics reset`); }},
+     {label: 'Cancel', cls: 'ghost'}]);
 }
 
 // ---------- screens & navigation ----------
@@ -900,7 +940,36 @@ function chooseDifficulty() {
 const mistakeLabel = n => n ? `${n} mistake${n > 1 ? 's' : ''}` : 'No limit';
 const hintLabel = n => n ? `${n} idea${n > 1 ? 's' : ''}` : 'Unlimited';
 
-function showSettings() {
+// Settings open on a short menu of sections; each row shows its current values and opens that section's page.
+const SETTINGS_PAGES = [
+  {id: 'game', title: 'Game', icon: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/>',
+    sum: () => `${mistakeLabel(settings.maxMistakes)} · ${hintLabel(settings.hintsPerGame)} · timer ${onOff(settings.showTimer)} · sounds ${onOff(settings.sounds)}`},
+  {id: 'board', title: 'On the board', icon: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+    sum: () => `Highlighting ${settings.highlightArea && settings.highlightSame ? 'on' : settings.highlightArea || settings.highlightSame ? 'partly on' : 'off'} · ` +
+      `${settings.numberHelper === 'off' ? 'no number helper' : settings.numberHelper + ' helper'} · auto-remove ${onOff(settings.autoNotes)}`},
+  {id: 'training', title: 'Training', icon: '<path d="M4 7l8-4 8 4-8 4z"/><path d="M8 9v5c0 1.5 2 3 4 3s4-1.5 4-3V9"/>',
+    sum: () => settings.training ? 'On — a coach explains every step' : 'Off'},
+  {id: 'puzzles', title: 'New puzzles', gap: true, icon: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/>',
+    sum: () => `Pace ${settings.pace} · ${settings.symmetric ? 'symmetric' : 'not symmetric'} · ` +
+      (settings.families.length ? `${settings.families.length} favourite${settings.families.length > 1 ? 's' : ''}` : 'no favourites')},
+  {id: 'look', title: 'Appearance', icon: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/>',
+    sum: () => `${settings.theme[0].toUpperCase() + settings.theme.slice(1)} theme · ${settings.colour} · ${FONTS[settings.font].label}`},
+  {id: 'about', title: 'Scoring & levels', gap: true, icon: '<circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/>',
+    sum: () => 'How points and levels work'},
+];
+const onOff = v => v ? 'on' : 'off';
+const CHEVRON = '<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+
+function showSettings(page) {
+  if (typeof page !== 'string') page = null;
+  if (!page) {
+    const items = SETTINGS_PAGES.map(p => `${p.gap ? '</div><div class="setcard">' : ''}<button class="setitem" data-page="${p.id}">` +
+      `<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${p.icon}</svg></span>` +
+      `<span class="txt">${p.title}<small>${p.sum()}</small></span>${CHEVRON}</button>`).join('');
+    showModal(`<h2>Settings</h2><div class="setmenu" id="setMenu"><div class="setcard">${items}</div></div>`, [{label: 'Done', cls: 'primary'}]);
+    $('setMenu').addEventListener('click', e => { const b = e.target.closest('[data-page]'); if (b) showSettings(b.dataset.page); });
+    return;
+  }
   const toggle = ([k, label, sub]) => `<label class="row"><div>${label}${sub ? `<small>${sub}</small>` : ''}</div>
     <span class="switch"><input type="checkbox" data-set="${k}" ${settings[k] ? 'checked' : ''}><span></span></span></label>`;
   const seg = ['auto', 'light', 'dark'].map(t =>
@@ -920,28 +989,31 @@ function showSettings() {
     `<button data-helper="${k}" class="${settings.numberHelper === k ? 'on' : ''}">${l}</button>`).join('');
   const famChips = E.FAMILIES.map(f =>
     `<button data-family="${f.id}" class="${settings.families.includes(f.id) ? 'on' : ''}">${f.name}</button>`).join('');
-  showModal(`<h2>Settings</h2><div id="settingsBody">
-    <h3>Game</h3>
+  const pages = {
+    game: `
     <div class="row"><div>Game over after<small>Mistakes allowed before the game is lost</small></div>
       <div class="stepper"><button data-step="-1" aria-label="Fewer">−</button><b id="mistakeVal">${mistakeLabel(settings.maxMistakes)}</b><button data-step="1" aria-label="More">+</button></div></div>
     <div class="row"><div>Ideas per game<small>Each "Show me" uses one</small></div>
       <div class="stepper"><button data-hstep="-1" aria-label="Fewer">−</button><b id="hintVal">${hintLabel(settings.hintsPerGame)}</b><button data-hstep="1" aria-label="More">+</button></div></div>
-    ${[['training', 'Training mode', 'A coach shows and explains every step (games aren\'t scored)'],
-       ['autoNotes', 'Auto-remove pencilmarks', 'Clear a number from pencilmarks when it is placed'],
-       ['showTimer', 'Show timer'], ['sounds', 'Sounds']].map(toggle).join('')}
-    <h3>Puzzle style</h3>
+    ${[['showTimer', 'Show timer'], ['sounds', 'Sounds']].map(toggle).join('')}`,
+    board: `
+    ${[['highlightArea', 'Highlight row, column & box', 'Tint the row, column and box of the selected square'],
+       ['highlightSame', 'Highlight identical numbers', 'Show every copy of the selected number']].map(toggle).join('')}
+    <div class="row col"><div>Number helper<small>Tap a number on the board, or on the pad with no square selected. Shade: grey out where it can't go. Lines: tint the rows and columns its copies cover.</small></div><div class="seg">${helperSeg}</div></div>
+    ${toggle(['autoNotes', 'Auto-remove pencilmarks', 'Clear a number from pencilmarks when it is placed'])}`,
+    training: toggle(['training', 'Training mode', 'A coach shows and explains every step. Mistakes never end the game, and games aren\'t scored.']) +
+      '<p class="note">You can also switch it on for one game from New Game, and open any lesson from Learn techniques on the home screen.</p>',
+    puzzles: `
+    <div class="row col"><div>Pace<small>Flowing: lots to find at once. Tight: often just one way forward.</small></div><div class="seg">${paceSeg}</div></div>
+    ${toggle(['symmetric', 'Symmetric clue layout', 'The classic newspaper look: the squares holding starting numbers make a pattern that looks the same when the board is turned upside down. It doesn\'t change how hard the puzzle is.'])}
     <div class="sublabel">Favourite techniques</div>
     <div class="chips">${famChips}</div>
-    <p class="note">New Hard, Expert and Master puzzles will need at least one of your favourites (where the level allows it).</p>
-    <div class="row"><div>Pace<small>Flowing: lots to find at once. Tight: often just one way forward.</small></div><div class="seg">${paceSeg}</div></div>
-    ${toggle(['symmetric', 'Symmetric clue layout', 'The classic newspaper look'])}
-    <h3>Highlighting</h3>
-    ${[['highlightArea', 'Highlight row, column & box'], ['highlightSame', 'Highlight identical numbers']].map(toggle).join('')}
-    <div class="row"><div>Number helper<small>Tap a number on the board, or on the pad with no square selected. Shade: grey out where it can't go. Lines: tint the rows and columns its copies cover.</small></div><div class="seg">${helperSeg}</div></div>
-    <h3>Appearance</h3>
+    <p class="note">New Hard, Expert and Master puzzles will need at least one of your favourites (where the level allows it).</p>`,
+    look: `
     <div class="row"><div>Theme</div><div class="seg">${seg}</div></div>
     <div class="sublabel">Colour</div><div class="swatches">${swatches}</div>
-    <div class="sublabel">Font</div><div class="fontgrid">${fonts}</div>
+    <div class="sublabel">Font</div><div class="fontgrid">${fonts}</div>`,
+    about: `
     <h3>Scoring</h3>
     <p class="note">Each correct number scores points, more on harder levels. Completing a row, column or box earns a bonus.
       Finish under the target time (${par}) to earn a time bonus of up to double your score — the faster, the bigger.
@@ -949,8 +1021,12 @@ function showSettings() {
     <h3>How levels work</h3>
     <p class="note">Every puzzle is solved by a built-in solver that works like a person: it always tries the easiest
       technique first. A puzzle's level is the hardest technique it needs — the same idea as the SE rating
-      used by enthusiasts. The number of starting clues doesn't decide the level.</p>
-  </div>`, [{label: 'Done', cls: 'primary'}]);
+      used by enthusiasts. The number of starting clues doesn't decide the level.</p>`,
+  };
+  const title = SETTINGS_PAGES.find(p => p.id === page).title;
+  showModal(`<div class="sethead"><button class="iconbtn" id="setBack" aria-label="Back to Settings"><svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <h2>${title}</h2><span></span></div><div id="settingsBody">${pages[page]}</div>`, [{label: 'Done', cls: 'primary'}]);
+  $('setBack').addEventListener('click', () => showSettings());
 
   const body = $('settingsBody');
   const mark = (sel, el) => body.querySelectorAll(sel).forEach(x => x.classList.toggle('on', x === el));
@@ -980,7 +1056,7 @@ function showSettings() {
     }
     changed();
   });
-  $('customColour').addEventListener('input', e => {
+  if ($('customColour')) $('customColour').addEventListener('input', e => {
     settings.colour = 'custom'; settings.customColour = e.target.value;
     $('customSwatch').style.background = e.target.value;
     mark('.swatch', $('customSwatch'));
@@ -1008,6 +1084,7 @@ function startGame(diff, found) {
     unitsDone: Array(27).fill(0), elims: [], time: 0, hints: training ? -1 : hintAllowance(),
     history: [], status: 'playing', secondChance: false, sel: -1, notesMode: false,
     training, assisted: training, // training games are coached and never scored
+    pace: found.pace || settings.pace,
   };
   if (!training) stats.byDiff[diff].started++;
   saveStats(); saveGame();
@@ -1030,6 +1107,7 @@ async function newGame(diff) {
     // Nothing matched the favourites in time: relax them rather than leave the player waiting.
     $('loadingText').textContent = 'Nothing matched your favourites yet — finding any puzzle at this level…';
     found = await searchPuzzle(level, {symmetric: prefs.symmetric, recipe: diff}, progress);
+    if (found) found.pace = 'any'; // the pace filter was dropped
   }
   $('loading').classList.remove('on');
   if (found) startGame(diff, found);
@@ -1318,6 +1396,9 @@ const LESSON_FIGS = {
     cap: 'If the first blue end isn\'t 1, it is 2, which makes the next square 3, the next 4 and the last end 1. So one end is 1, and squares that see both ends can\'t be.'},
 };
 
+// The picture plays as a short animation (same CSS as the scanning pictures): the box outline, the shaded row/column/box,
+// the numbers that matter lighting up, ruled-out lines sweeping out from their numbers, the blue then amber pattern squares
+// with their links drawn between them, the pencilmarks being crossed off, and finally the answer written in.
 function lessonFig(f) {
   if (!f) return '';
   const S = 36, W = f.w * S, H = f.h * S, r0 = f.r0 || 0, c0 = f.c0 || 0;
@@ -1326,37 +1407,101 @@ function lessonFig(f) {
   const mid = (r, c) => [(c - c0 + .5) * S, (r - r0 + .5) * S];
   const peer = f.peers && [+f.peers[0], +f.peers[1]];
   const sees = (r, c) => peer && (r === peer[0] || c === peer[1] || (Math.floor(r / 3) === Math.floor(peer[0] / 3) && Math.floor(c / 3) === Math.floor(peer[1] / 3)));
-  let back = '', front = '';
-  for (let r = r0; r < r0 + f.h; r++) for (let c = c0; c < c0 + f.w; c++) {
-    const k = f.cells[`${r}${c}`] || {}, x = (c - c0) * S, y = (r - r0) * S;
-    const tint = (Math.floor(r / 3) + Math.floor(c / 3)) % 2 ? 'var(--tint)' : 'var(--card)';
-    back += `<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${fills[k.bg] || rings[k.ring] || (sees(r, c) ? fills.area : tint)}" stroke="var(--line)"/>`;
-    if (!k.bg && !k.ring && (f.lines || []).some(l => l === `r${r}` || l === `c${c}`))
-      back += `<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="var(--wrongbg)" opacity=".55"/>`;
-    if (k.v || k.a) front += `<text x="${x + S / 2}" y="${y + S * .7}" text-anchor="middle" font-size="${S * .6}" ` +
-      `font-weight="${k.a ? 800 : 500}" fill="${k.a ? 'var(--accent)' : 'var(--given)'}">${k.v || k.a}</text>`;
+  const fx = (t, cls = 'f', style = '') => `class="${cls}" style="--dl:${t.toFixed(2)}s;${style}"`;
+  const cell = (r, c, t, fill, extra = '') => `<rect x="${(c - c0) * S}" y="${(r - r0) * S}" width="${S}" height="${S}" fill="${fill}" ${extra} ${fx(t)}/>`;
+  const all = [];
+  for (let r = r0; r < r0 + f.h; r++) for (let c = c0; c < c0 + f.w; c++) all.push({r, c, k: f.cells[`${r}${c}`] || {}});
+  const target = all.find(q => q.k.bg === 'target'), ans = target && target.k.a;
+  const givens = all.filter(q => q.k.v);
+  let base = '', layers = '', front = '', top = '', t = .3;
+
+  // The still board: tints, givens and every pencilmark as it was before the step.
+  for (const {r, c, k} of all) {
+    const x = (c - c0) * S, y = (r - r0) * S;
+    base += `<rect x="${x}" y="${y}" width="${S}" height="${S}" fill="${(Math.floor(r / 3) + Math.floor(c / 3)) % 2 ? 'var(--tint)' : 'var(--card)'}" stroke="var(--line)"/>`;
+    if (k.v) front += `<text x="${x + S / 2}" y="${y + S * .7}" text-anchor="middle" font-size="${S * .6}" font-weight="500" fill="var(--given)">${k.v}</text>`;
     // Pencilmarks sit in their usual spots when there are many; up to three are written larger across the middle
     // so they can be read on a phone (one on its own larger still).
     const m = (k.n || '').length, few = m <= 3, fs = S * (m === 1 ? .5 : few ? .36 : .33);
-    for (const [j, d] of [...(k.n || '')].entries()) {
-      const nx = few ? x + S / 2 + (j - (m - 1) / 2) * S * .29 : x + S * (.2 + .3 * ((d - 1) % 3));
-      const ny = few ? y + S * (m === 1 ? .68 : .62) : y + S * (.31 + .3 * Math.floor((d - 1) / 3));
-      const crossed = (k.x || '').includes(d), lone = m === 1;
-      front += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="${fs}" font-weight="${crossed ? 800 : 700}" ` +
-        `fill="${crossed ? 'var(--wrong)' : k.ring ? 'var(--text)' : 'var(--muted)'}">${d}</text>`;
-      if (crossed) front += `<path d="M${nx - fs * .5} ${ny + fs * .05}l${fs} ${-fs * .8}" stroke="var(--wrong)" stroke-width="${lone ? 2.2 : 1.6}" stroke-linecap="round"/>`;
-    }
-    if (k.bg === 'out') front += `<path d="M${x + S * .38} ${y + S * .38}l${S * .24} ${S * .24}m0 ${-S * .24}l${-S * .24} ${S * .24}" ` +
-      'stroke="var(--wrong)" stroke-width="2" stroke-linecap="round" opacity=".7"/>';
+    k.marks = [...(k.n || '')].map((d, j) => ({d, fs, lone: m === 1, crossed: (k.x || '').includes(d),
+      nx: few ? x + S / 2 + (j - (m - 1) / 2) * S * .29 : x + S * (.2 + .3 * ((d - 1) % 3)),
+      ny: few ? y + S * (m === 1 ? .68 : .62) : y + S * (.31 + .3 * Math.floor((d - 1) / 3))}));
+    for (const p of k.marks) front += `<text x="${p.nx}" y="${p.ny}" text-anchor="middle" font-size="${p.fs}" font-weight="700" ` +
+      `fill="${k.ring ? 'var(--text)' : 'var(--muted)'}">${p.d}</text>`;
   }
-  const links = (f.links || []).map(([r1, c1, r2, c2]) => {
+  // 1. the box being talked about, and the row/column/box a square can see
+  if (f.box !== undefined) {
+    top += `<rect x="${(f.box % 3 * 3 - c0) * S + 1.5}" y="${(Math.floor(f.box / 3) * 3 - r0) * S + 1.5}" width="${3 * S - 3}" height="${3 * S - 3}" ` +
+      `rx="8" fill="none" stroke="var(--accent)" stroke-width="3" ${fx(t)}/>`;
+    t += .6;
+  }
+  if (peer) { all.filter(q => sees(q.r, q.c) && !q.k.bg).forEach(q => { layers += cell(q.r, q.c, t, fills.area); }); t += .7; }
+  // 2. the numbers that matter light up one at a time: copies of the answer when lines are ruled out, otherwise every given (counting them off)
+  if (target) for (const q of f.lines ? givens.filter(q => q.k.v === ans) : givens) { layers += cell(q.r, q.c, t, 'var(--accent)', 'fill-opacity=".22"'); t += f.lines ? .35 : .25; }
+  // 3. ruled-out rows and columns sweep out from the copy that rules them out
+  const lines = () => {
+    for (const l of f.lines || []) {
+      const n = +l.slice(1), row = l[0] === 'r', src = givens.find(q => q.k.v === ans && (row ? q.r === n : q.c === n));
+      const [sx, sy] = src ? mid(src.r, src.c) : [W / 2, H / 2];
+      layers += row
+        ? `<rect x="0" y="${(n - r0) * S}" width="${W}" height="${S}" fill="var(--wrongbg)" opacity=".55" ${fx(t, 'sx', `transform-origin:${sx}px ${sy}px`)}/>`
+        : `<rect x="${(n - c0) * S}" y="0" width="${S}" height="${H}" fill="var(--wrongbg)" opacity=".55" ${fx(t, 'sy', `transform-origin:${sx}px ${sy}px`)}/>`;
+      t += .45;
+    }
+    if (f.lines) t += .2;
+  };
+  const hasRings = all.some(q => q.k.ring);
+  if (!hasRings) lines();
+  const outs = all.filter(q => q.k.bg === 'out');
+  if (outs.length) {
+    for (const {r, c} of outs) {
+      const x = (c - c0) * S, y = (r - r0) * S;
+      layers += cell(r, c, t, fills.out);
+      top += `<path d="M${x + S * .38} ${y + S * .38}l${S * .24} ${S * .24}m0 ${-S * .24}l${-S * .24} ${S * .24}" ` +
+        `stroke="var(--wrong)" stroke-width="2" stroke-linecap="round" opacity=".7" ${fx(t)}/>`;
+    }
+    t += .7;
+  }
+  // 4. the pattern: blue squares, the links joining them, then amber squares
+  const ringIn = col => { const qs = all.filter(q => q.k.ring === col); qs.forEach(q => { layers += cell(q.r, q.c, t, rings[col]); }); if (qs.length) t += .7; };
+  ringIn('a');
+  for (const [r1, c1, r2, c2] of f.links || []) {
     const [x1, y1] = mid(r1, c1), [x2, y2] = mid(r2, c2);
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" opacity=".5"/>`;
-  }).join('') + (f.box === undefined ? '' : `<rect x="${(f.box % 3 * 3 - c0) * S + 1.5}" y="${(Math.floor(f.box / 3) * 3 - r0) * S + 1.5}" ` +
-    `width="${3 * S - 3}" height="${3 * S - 3}" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>`);
-  return `<figure class="lfig"><svg viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="${f.cap.replace(/"/g, '')}">
-    ${back}${links}${front}</svg><figcaption>${f.cap}</figcaption></figure>`;
+    top += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" pathLength="1" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" opacity=".5" ${fx(t, 'ln')}/>`;
+    t += .5;
+  }
+  ringIn('b');
+  if (hasRings) lines();
+  // 5. the squares that lose a number go red and the pencilmark is struck through
+  const elims = all.filter(q => q.k.bg === 'elim');
+  if (elims.length) {
+    elims.forEach(q => { layers += cell(q.r, q.c, t, fills.elim); });
+    t += .4;
+    for (const q of elims) for (const p of q.k.marks.filter(p => p.crossed)) {
+      top += `<g ${fx(t)}><text x="${p.nx}" y="${p.ny}" text-anchor="middle" font-size="${p.fs}" font-weight="800" fill="var(--wrong)" ` +
+        `stroke="var(--wrongbg)" stroke-width="2" paint-order="stroke">${p.d}</text>` +
+        `<path d="M${p.nx - p.fs * .5} ${p.ny + p.fs * .05}l${p.fs} ${-p.fs * .8}" stroke="var(--wrong)" stroke-width="${p.lone ? 2.2 : 1.6}" stroke-linecap="round"/></g>`;
+      t += .25;
+    }
+    t += .3;
+  }
+  // Pattern squares (blue) that lose other pencilmarks, as in a hidden pair
+  for (const q of all.filter(q => q.k.ring && q.k.x)) for (const p of q.k.marks.filter(p => p.crossed)) {
+    top += `<g ${fx(t)}><text x="${p.nx}" y="${p.ny}" text-anchor="middle" font-size="${p.fs}" font-weight="800" fill="var(--wrong)">${p.d}</text>` +
+      `<path d="M${p.nx - p.fs * .5} ${p.ny + p.fs * .05}l${p.fs} ${-p.fs * .8}" stroke="var(--wrong)" stroke-width="1.6" stroke-linecap="round"/></g>`;
+    t += .25;
+  }
+  // 6. the answer
+  if (target) {
+    const x = (target.c - c0) * S, y = (target.r - r0) * S;
+    layers += cell(target.r, target.c, t, fills.target);
+    top += `<text x="${x + S / 2}" y="${y + S * .7}" text-anchor="middle" font-size="${S * .6}" font-weight="800" fill="var(--accent)" ${fx(t + .2)}>${ans}</text>` +
+      `<rect x="${x + 2}" y="${y + 2}" width="${S - 4}" height="${S - 4}" rx="6" fill="none" stroke="var(--accent)" ${fx(t + .2, 'pulse big')}/>`;
+  }
+  return `<figure class="lfig"><svg class="scan" viewBox="0 0 ${W} ${H}" style="max-width:${W}px" role="img" aria-label="${f.cap.replace(/"/g, '')}">
+    ${base}${layers}${front}${top}</svg>${REPLAY_FIG}<figcaption>${f.cap}</figcaption></figure>`;
 }
+const REPLAY_FIG = `<button class="replay" type="button"><svg class="i" viewBox="0 0 24 24" width="16" height="16"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Replay</button>`;
 
 // The scanning animation for one box (sc from E.scanBox / E.scanFind) over the board g, in 90-unit board coordinates.
 // Returns {svg: inner elements, dur: seconds until the last piece has played}.
@@ -1811,7 +1956,7 @@ document.addEventListener('visibilitychange', () => {
 // ---------- events ----------
 const actions = {
   home: goHome, settings: showSettings, continue: continueGame, newgame: chooseDifficulty,
-  stats: () => openScreen('stats'), learn: showLearn, restart, pause: togglePause, undo, erase, hint, cancelSearch,
+  stats: () => openScreen('stats'), learn: showLearn, restart, pause: togglePause, undo, erase, hint, cancelSearch, resetLevel,
   notes() { if (!playing()) return; hintView = null; G.notesMode = !G.notesMode; commit(); },
   ...hintActions,
 };
