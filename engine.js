@@ -149,7 +149,7 @@ function hiddenSingle(from, to) {
         return {place: [{i, d}], area: UNITS[u], focus: [...blockers], digits: bit,
           nudge: `Look at where ${d} can go in ${unitName(u)}.`,
           text: `In ${unitName(u)}, every empty square except ${cellName(i)} is ruled out for ${d}` +
-            (blockers.size ? ` — each already sees a ${d} (highlighted)` : '') + `. So ${cellName(i)} must be ${d}.`};
+            (blockers.size ? ` — each already sees ${d === 8 ? 'an' : 'a'} ${d} (highlighted)` : '') + `. So ${cellName(i)} must be ${d}.`};
       }
     }
     return null;
@@ -532,8 +532,8 @@ function scanFind(s, order, from = 0) {
         tech: 'hiddenSingleBox', name: two ? 'Scanning in two directions' : 'Scanning in one direction', level: 1, scan: sc,
         nudge: `Scan the ${d}s in the ${BAND_NAMES[band]} band.`,
         text: `${cap(unitName(18 + b))} has no ${d} yet.` +
-          (sc.rows.length ? ` Across: ${rowsTxt} already ${sc.rows.length > 1 ? 'have' : 'has'} a ${d}.` : '') +
-          (two ? ` Down: ${colsTxt} ${sc.cols.length > 1 ? 'have' : 'has'} ${sc.rows.length ? 'one too' : 'a ' + d}.` : '') +
+          (sc.rows.length ? ` Across: ${rowsTxt} already ${sc.rows.length > 1 ? 'have' : 'has'} ${d === 8 ? 'an' : 'a'} ${d}.` : '') +
+          (two ? ` Down: ${colsTxt} ${sc.cols.length > 1 ? 'have' : 'has'} ${sc.rows.length ? 'one too' : (d === 8 ? 'an ' : 'a ') + d}.` : '') +
           ` That leaves one square for the ${d}: ${cellName(sc.target)}.`};
     }
   }
