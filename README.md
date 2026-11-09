@@ -34,7 +34,7 @@ Every puzzle has exactly one solution and can be solved by logic alone, with no 
 
 **Number helper.** Tap a number on the board (or on the number pad with no square selected) and the board shows where it can go, on every level. Choose in Settings: **Shade** greys out every square the number can't go in, so the open squares stand out; **Lines** only tints the rows and columns its copies cover, so you still do the last step yourself; or **Off**.
 
-**Focus band.** Press and hold a square in the left column to tint its three rows (one band of boxes) light pink, or a square in the top row to tint its three columns. It stays until you place a number.
+**Focus band.** Press and hold a square in the left column to tint its three rows (one band of boxes) light pink, or a square in the top row to tint its three columns. It stays until you place a number, or hold any square in the band again.
 
 ## Features
 

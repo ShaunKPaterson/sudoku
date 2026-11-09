@@ -710,16 +710,19 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme
 
 // ---------- focus band ----------
 // Holding a square in the left column lights the 3 rows of its band; holding one in the top row lights the
-// 3 columns of its stack (the corner square counts as the left column). It stays on until a number is placed.
+// 3 columns of its stack (the corner square counts as the left column). It stays on until a number is placed,
+// or until any square inside the band is held again.
 const pressed = {t: 0, x: 0, y: 0, fired: false};
 function pressStart(i, e) {
   clearTimeout(pressed.t);
   pressed.fired = false;
-  if (!playing() || (CO[i] !== 0 && RO[i] !== 0)) return;
+  const inBand = G.band && (G.band.rows ? Math.floor(RO[i] / 3) : Math.floor(CO[i] / 3)) === G.band.n;
+  if (!playing() || (!inBand && CO[i] !== 0 && RO[i] !== 0)) return;
   pressed.x = e.clientX; pressed.y = e.clientY;
   pressed.t = setTimeout(() => {
     pressed.fired = true;
-    G.band = CO[i] === 0 ? {rows: true, n: Math.floor(RO[i] / 3)} : {rows: false, n: Math.floor(CO[i] / 3)};
+    // Holding any square inside the band again turns it off.
+    G.band = inBand ? null : CO[i] === 0 ? {rows: true, n: Math.floor(RO[i] / 3)} : {rows: false, n: Math.floor(CO[i] / 3)};
     buzz(15);
     render();
   }, 450);
