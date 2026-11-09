@@ -101,9 +101,8 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .cell.nx{background:color-mix(in srgb,var(--muted) 24%,var(--card))}
 .cell.nx:not(.user){color:color-mix(in srgb,var(--given) 55%,var(--card))}
 .cell.nl{background:color-mix(in srgb,var(--wrongbg) 75%,var(--card))}
-/* focus band: long-press a left-column or top-row square to light its 3 rows or 3 columns */
-.cell.dim{background:color-mix(in srgb,var(--muted) 16%,var(--card))}
-.cell.dim .v,.cell.dim .notes{opacity:.45}
+/* focus band: long-press a left-column or top-row square to tint its 3 rows or 3 columns light pink */
+.cell.band:not(.same):not(.rel){background:color-mix(in srgb,#f2a7c3 38%,var(--card))}
 .board{-webkit-touch-callout:none}
 .num.focus{background:var(--accent);color:#fff}
 .num.focus .left{color:#fff;opacity:.85}
@@ -789,7 +788,7 @@ function render() {
       else if (settings.highlightArea && BO[i] === BO[sel]) cls += ' box';
       if (settings.highlightSame && selVal && v === selVal) cls += ' same';
     }
-    if (G.band && !hv && (G.band.rows ? Math.floor(RO[i] / 3) : Math.floor(CO[i] / 3)) !== G.band.n) cls += ' dim';
+    if (G.band && !hv && (G.band.rows ? Math.floor(RO[i] / 3) : Math.floor(CO[i] / 3)) === G.band.n) cls += ' band';
     if (i === sel) cls += ' sel';
     if (hv) {
       if (hv.area.has(i)) cls += ' h-area';
