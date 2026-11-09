@@ -101,6 +101,10 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .cell.nx{background:color-mix(in srgb,var(--muted) 24%,var(--card))}
 .cell.nx:not(.user){color:color-mix(in srgb,var(--given) 55%,var(--card))}
 .cell.nl{background:color-mix(in srgb,var(--wrongbg) 75%,var(--card))}
+/* focus band: long-press a left-column or top-row square to light its 3 rows or 3 columns */
+.cell.dim{background:color-mix(in srgb,var(--muted) 16%,var(--card))}
+.cell.dim .v,.cell.dim .notes{opacity:.45}
+.board{-webkit-touch-callout:none}
 .num.focus{background:var(--accent);color:#fff}
 .num.focus .left{color:#fff;opacity:.85}
 .cell.sel{background:var(--accent);color:#fff;border-radius:10px}
@@ -198,12 +202,12 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .banner small{display:block;font-size:14px;font-weight:600;opacity:.92;margin-top:3px}
 .statcard .banner{padding:7px 18px;font-size:16px;border-radius:14px}
 .statcard .banner small{font-size:12.5px;margin-top:1px}
-.banner.show{animation:banner 1.6s ease-out forwards}
+.banner.show{animation:banner 3s ease-out forwards}
 @keyframes banner{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}
-  14%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
-  24%{transform:translate(-50%,-50%) scale(1)}
-  75%{opacity:1;transform:translate(-50%,-53%)}
+  7.5%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}
+  13%{transform:translate(-50%,-50%) scale(1)}
+  87%{opacity:1;transform:translate(-50%,-53%)}
   100%{opacity:0;transform:translate(-50%,-65%)}}
 .confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55}
 .cell.pop .v{animation:pop .25s ease-out}
@@ -705,6 +709,27 @@ function banner(html) {
 }
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
+// ---------- focus band ----------
+// Holding a square in the left column lights the 3 rows of its band; holding one in the top row lights the
+// 3 columns of its stack (the corner square counts as the left column). It stays on until a number is placed.
+const pressed = {t: 0, x: 0, y: 0, fired: false};
+function pressStart(i, e) {
+  clearTimeout(pressed.t);
+  pressed.fired = false;
+  if (!playing() || (CO[i] !== 0 && RO[i] !== 0)) return;
+  pressed.x = e.clientX; pressed.y = e.clientY;
+  pressed.t = setTimeout(() => {
+    pressed.fired = true;
+    G.band = CO[i] === 0 ? {rows: true, n: Math.floor(RO[i] / 3)} : {rows: false, n: Math.floor(CO[i] / 3)};
+    buzz(15);
+    render();
+  }, 450);
+}
+function pressEnd() { clearTimeout(pressed.t); }
+addEventListener('pointerup', pressEnd);
+addEventListener('pointercancel', pressEnd);
+addEventListener('pointermove', e => { if (Math.hypot(e.clientX - pressed.x, e.clientY - pressed.y) > 12) pressEnd(); });
+
 // ---------- board DOM ----------
 const cells = [];
 (function buildBoard() {
@@ -712,10 +737,12 @@ const cells = [];
   for (let i = 0; i < 81; i++) {
     const el = document.createElement('div');
     el.innerHTML = '<span class="v"></span><div class="notes">' + '<span></span>'.repeat(9) + '</div>';
-    el.addEventListener('click', () => select(i));
+    el.addEventListener('click', () => { if (pressed.fired) { pressed.fired = false; return; } select(i); });
+    el.addEventListener('pointerdown', e => pressStart(i, e));
     board.appendChild(el);
     cells.push({el, v: el.firstChild, notes: [...el.lastChild.children]});
   }
+  board.addEventListener('contextmenu', e => e.preventDefault());
   board.insertAdjacentHTML('beforeend', '<svg class="scanlayer scan" id="scanLayer" viewBox="0 0 90 90" preserveAspectRatio="none" aria-hidden="true"></svg>');
   const pad = $('numpad');
   for (let d = 1; d <= 9; d++) {
@@ -762,6 +789,7 @@ function render() {
       else if (settings.highlightArea && BO[i] === BO[sel]) cls += ' box';
       if (settings.highlightSame && selVal && v === selVal) cls += ' same';
     }
+    if (G.band && !hv && (G.band.rows ? Math.floor(RO[i] / 3) : Math.floor(CO[i] / 3)) !== G.band.n) cls += ' dim';
     if (i === sel) cls += ' sel';
     if (hv) {
       if (hv.area.has(i)) cls += ' h-area';
@@ -1210,6 +1238,7 @@ function input(d) {
   G.board[i] = d;
   G.notes[i] = 0;
   G.focus = d;
+  G.band = null;
   popCell = i;
   if (d === G.solution[i]) {
     if (!G.scored[i]) {
@@ -1794,7 +1823,7 @@ const hintActions = {
       for (const {i, d} of step.place) {
         pushHistory(i);
         G.sel = i;
-        G.board[i] = d; G.notes[i] = 0; G.scored[i] = 1; popCell = i;
+        G.board[i] = d; G.notes[i] = 0; G.scored[i] = 1; popCell = i; G.band = null;
         clearPeerNotes(i, d);
         celebrate(i, true);
       }
@@ -1845,7 +1874,7 @@ const hintActions = {
     }
     if (G.hints > 0) G.hints--;
     pushHistory(i);
-    G.board[i] = G.solution[i]; G.notes[i] = 0; G.scored[i] = 1; G.sel = i; popCell = i;
+    G.board[i] = G.solution[i]; G.notes[i] = 0; G.scored[i] = 1; G.sel = i; popCell = i; G.band = null;
     clearPeerNotes(i, G.solution[i]);
     celebrate(i, true);
     if (isSolved()) return win();

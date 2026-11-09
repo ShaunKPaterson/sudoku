@@ -34,6 +34,8 @@ Every puzzle has exactly one solution and can be solved by logic alone, with no 
 
 **Number helper.** Tap a number on the board (or on the number pad with no square selected) and the board shows where it can go, on every level. Choose in Settings: **Shade** greys out every square the number can't go in, so the open squares stand out; **Lines** only tints the rows and columns its copies cover, so you still do the last step yourself; or **Off**.
 
+**Focus band.** Press and hold a square in the left column to light up its three rows (one band of boxes), or a square in the top row to light up its three columns. The rest of the board dims until you place a number.
+
 ## Features
 
 - Seven levels, from Beginner to Master, with a fresh puzzle every game
